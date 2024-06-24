@@ -1,0 +1,38 @@
+﻿.header-cell {
+    border-bottom-width: 1px;
+    border-right-width: 1px;
+    border-bottom-color: black;
+    border-right-color: black;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    overflow: hidden;
+    position: relative;
+}
+
+.header-label {
+    position: relative;
+}
+
+.resizer {
+    width: 5px;
+    background-color: gray;
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    cursor: resize-horizontal;
+}
+
+.cell {
+    border-bottom-width: 1px;
+    border-right-width: 1px;
+    border-bottom-color: black;
+    border-right-color: black;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    overflow: hidden;
+}
