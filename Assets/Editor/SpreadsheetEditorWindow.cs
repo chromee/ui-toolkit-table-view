@@ -101,7 +101,11 @@ public class SpreadsheetEditorWindow : EditorWindow
             var cell = new Label($"Cell {rowIndex},{j}");
             cell.AddToClassList("cell");
             cell.style.width = columnWidths[j];
-            cell.RegisterCallback<ClickEvent>(evt => StartEditing(cell));
+            cell.RegisterCallback<MouseDownEvent>(evt =>
+            {
+                if (evt.clickCount == 1) SelectCell(cell);
+                if (evt.clickCount >= 2) StartEditing(cell);
+            });
             row.Add(cell);
             cells[rowIndex][j] = cell;
         }
@@ -154,10 +158,7 @@ public class SpreadsheetEditorWindow : EditorWindow
         var textField = new TextField { value = cell.text, };
         var columnIndex = cell.parent.IndexOf(cell);
         textField.style.width = columnWidths[columnIndex];
-        textField.style.paddingLeft = 10;
-        textField.style.paddingRight = 10;
-        textField.style.paddingTop = 5;
-        textField.style.paddingBottom = 5;
+        textField.AddToClassList("input-cell");
 
         cell.parent.Insert(cell.parent.IndexOf(cell), textField);
         cell.RemoveFromHierarchy();
@@ -196,7 +197,11 @@ public class SpreadsheetEditorWindow : EditorWindow
             var cell = new Label($"Cell {Array.IndexOf(cells, row)},{columns - 1}");
             cell.AddToClassList("cell");
             cell.style.width = columnWidths[columns - 1];
-            cell.RegisterCallback<ClickEvent>(evt => StartEditing(cell));
+            cell.RegisterCallback<MouseDownEvent>(evt =>
+            {
+                if (evt.clickCount == 1) SelectCell(cell);
+                if (evt.clickCount >= 2) StartEditing(cell);
+            });
             row[Array.IndexOf(row, row[0])].parent.Add(cell);
         }
 
@@ -208,8 +213,46 @@ public class SpreadsheetEditorWindow : EditorWindow
             cells[i][columns - 1] = cell;
             cell.AddToClassList("cell");
             cell.style.width = columnWidths[columns - 1];
-            cell.RegisterCallback<ClickEvent>(evt => StartEditing(cell));
+            cell.RegisterCallback<MouseDownEvent>(evt =>
+            {
+                if (evt.clickCount == 1) SelectCell(cell);
+                if (evt.clickCount >= 2) StartEditing(cell);
+            });
             table[i + 1].Add(cell); // +1 to account for the header row
         }
+    }
+
+    private VisualElement _selector;
+
+    private void SelectCell(VisualElement cell)
+    {
+        if (_selector == null)
+        {
+            _selector = new VisualElement();
+            _selector.AddToClassList("selector");
+            _selector.pickingMode = PickingMode.Ignore;
+            _selector.style.position = Position.Absolute;
+        }
+
+        var targetRect = GetElementRelativeBound(cell, rootVisualElement);
+
+        _selector.style.left = targetRect.x - 1;
+        _selector.style.top = targetRect.y - 1;
+        _selector.style.width = targetRect.width;
+        _selector.style.height = targetRect.height;
+
+        rootVisualElement.Add(_selector);
+    }
+
+    private Rect GetElementRelativeBound(VisualElement element, VisualElement relativeTo)
+    {
+        var worldBound = element.worldBound;
+
+        var localBound = worldBound;
+        var containerWorldBound = relativeTo.worldBound;
+        localBound.x -= containerWorldBound.x;
+        localBound.y -= containerWorldBound.y;
+
+        return new Rect(localBound.x, localBound.y, localBound.width, localBound.height);
     }
 }
