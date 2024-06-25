@@ -53,8 +53,14 @@
     border-width: 0;
 }
 
-.selector {
+.select-marker {
     border-width: 3px;
     border-color: blue;
+    position: absolute;
+}
+
+.copy-marker {
+    border-width: 3px;
+    border-color: green;
     position: absolute;
 }
