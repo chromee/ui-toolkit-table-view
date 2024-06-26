@@ -30,10 +30,7 @@
     border-right-width: 1px;
     border-bottom-color: black;
     border-right-color: black;
-    padding-left: 10px;
-    padding-right: 10px;
-    padding-top: 5px;
-    padding-bottom: 5px;
+    padding: 5px 10px;
     overflow: hidden;
 }
 
@@ -45,22 +42,19 @@
 }
 
 .input-cell > TextInput {
-    padding-top: 5;
-    padding-bottom: 5;
-    padding-right: 10;
-    padding-left: 10;
+    padding: 5 10;
     margin: 0;
     border-width: 0;
 }
 
 .select-marker {
-    border-width: 3px;
+    border-width: 2px;
     border-color: blue;
     position: absolute;
 }
 
 .copy-marker {
-    border-width: 3px;
+    border-width: 2px;
     border-color: green;
     position: absolute;
 }
