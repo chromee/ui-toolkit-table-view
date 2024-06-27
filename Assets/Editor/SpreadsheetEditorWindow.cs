@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
+using Chorome.Scripts.Editor;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -8,18 +10,18 @@ namespace Editor
 {
     public class SpreadsheetEditorWindow : EditorWindow
     {
-        private int _columns = 5;
-        private int _rows = 5;
+        private int _columnCount = 5;
+        private int _rowCount = 5;
         private float[] _columnWidths;
         private VisualElement[] _headerCells;
-        private StringCell[][] _cells;
+        private Cell[][] _cells;
         private VisualElement _table;
         private VisualElement _headerRow;
 
-        private StringCell _selectedCell;
+        private Cell _selectedCell;
         private VisualElement _selectMarker;
 
-        private StringCell _copiedCell;
+        private Cell _copiedCell;
         private VisualElement _copyMarker;
 
         private readonly HashSet<KeyCode> _pressedKeys = new();
@@ -37,12 +39,12 @@ namespace Editor
             var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>("Assets/Editor/SpreadsheetEditor.uss");
             rootVisualElement.styleSheets.Add(styleSheet);
 
-            _columnWidths = new float[_columns];
-            _headerCells = new VisualElement[_columns];
-            _cells = new StringCell[_rows][];
+            _columnWidths = new float[_columnCount];
+            _headerCells = new VisualElement[_columnCount];
+            _cells = new Cell[_rowCount][];
 
             // Initialize column widths
-            for (var i = 0; i < _columns; i++) _columnWidths[i] = 100f;
+            for (var i = 0; i < _columnCount; i++) _columnWidths[i] = 100f;
 
             // Create a table
             _table = new VisualElement();
@@ -52,7 +54,7 @@ namespace Editor
             // Create header row with resizable columns
             _headerRow = new VisualElement();
             _headerRow.style.flexDirection = FlexDirection.Row;
-            for (var j = 0; j < _columns; j++)
+            for (var j = 0; j < _columnCount; j++)
             {
                 var headerCell = CreateHeaderCell(j);
                 _headerCells[j] = headerCell;
@@ -62,7 +64,7 @@ namespace Editor
             _table.Add(_headerRow);
 
             // Create data rows
-            for (var i = 0; i < _rows; i++)
+            for (var i = 0; i < _rowCount; i++)
             {
                 var row = CreateDataRow(i);
                 _table.Add(row);
@@ -124,8 +126,9 @@ namespace Editor
         private void PasteCell()
         {
             if (_copiedCell == null) return;
+            if (_selectedCell == null) return;
 
-            _selectedCell.Value = _copiedCell.Value;
+            _selectedCell.CopyFrom(_copiedCell);
             _copiedCell = null;
             _copyMarker.RemoveFromHierarchy();
             _copyMarker = null;
@@ -142,14 +145,14 @@ namespace Editor
 
         private void DeleteCell()
         {
-            _selectedCell.Value = string.Empty;
+            _selectedCell.Clear();
         }
 
         #endregion
 
         #region select
 
-        private void SelectCell(StringCell cell)
+        private void SelectCell(Cell cell)
         {
             if (_selectMarker == null)
             {
@@ -196,10 +199,17 @@ namespace Editor
         {
             var row = new VisualElement();
             row.style.flexDirection = FlexDirection.Row;
-            _cells[rowIndex] = new StringCell[_columns];
-            for (var j = 0; j < _columns; j++)
+            _cells[rowIndex] = new Cell[_columnCount];
+            for (var j = 0; j < _columnCount; j++)
             {
-                var cell = new StringCell(rowIndex, j, $"Cell {rowIndex},{j}", _columnWidths[j]);
+                Cell cell = j switch
+                {
+                    0 => new Cell<string>($"Cell {rowIndex},{j}", _columnWidths[j]),
+                    1 => new Cell<int>(rowIndex, _columnWidths[j]),
+                    2 => new Cell<float>(rowIndex * 1.1f, _columnWidths[j]),
+                    _ => new Cell<bool>(rowIndex % 2 == 0, _columnWidths[j]),
+                };
+
                 cell.Element.RegisterCallback<MouseDownEvent>(evt =>
                 {
                     if (evt.clickCount == 1) SelectCell(cell);
@@ -240,7 +250,7 @@ namespace Editor
             _headerCells[_resizingColumnIndex].style.width = _columnWidths[_resizingColumnIndex];
 
             // Update all cells in the same column
-            for (var i = 0; i < _rows; i++) _cells[i][_resizingColumnIndex].Width = _columnWidths[_resizingColumnIndex];
+            for (var i = 0; i < _rowCount; i++) _cells[i][_resizingColumnIndex].Width = _columnWidths[_resizingColumnIndex];
         }
 
         private void StopResizing(MouseUpEvent evt)
@@ -279,69 +289,172 @@ namespace Editor
 
     #region cells
 
-    public class StringCell : Cell
+    public class Cell<T> : Cell
     {
-        private string _value;
+        public VisualElement Body;
 
-        public string Value
-        {
-            get => _value;
-            set
-            {
-                _value = value;
-                if (Label != null) Label.text = value;
-            }
-        }
+        public T Value { get; set; }
 
-        public readonly Label Label;
-
-        public StringCell(int row, int column, string value, float width = 100f) : base(row, column, width)
+        public Cell(T value, float width = 100f) : base(width)
         {
             Value = value;
-            Label = new Label { text = Value };
-            Element.Add(Label);
+            Refresh();
         }
 
-        public void StartEditing()
+        public void Refresh()
         {
-            var textField = new TextField { value = Value, };
+            Element.Clear();
+
+            if (typeof(T) == typeof(string)) Body = new Label { text = Convert.ToString(Value) };
+            else if (typeof(T) == typeof(int)) Body = new Label { text = Convert.ToInt32(Value).ToString() };
+            else if (typeof(T) == typeof(float)) Body = new Label { text = Convert.ToSingle(Value).ToString(CultureInfo.InvariantCulture) };
+            else if (typeof(T) == typeof(bool)) Body = new Toggle { text = string.Empty, value = Convert.ToBoolean(Value) };
+
+            Element.Add(Body);
+        }
+
+        public override void Clear() => Value = default;
+
+        public override void CopyFrom(Cell from)
+        {
+            if (from.GetType() != GetType()) return;
+            Value = from.As<T>().Value;
+        }
+
+        #region editing
+
+        public override void StartEditing()
+        {
+            if (typeof(T) == typeof(string)) StartEditingAsString();
+            else if (typeof(T) == typeof(int)) StartEditingAsInt();
+            else if (typeof(T) == typeof(float)) StartEditingAsFloat();
+            else if (typeof(T) == typeof(bool)) StartEditingAsBool();
+        }
+
+        private void StartEditingAsString()
+        {
+            var textField = new TextField { value = Convert.ToString(Value), };
             textField.style.width = Width;
             Element.AddToClassList("input-cell");
 
-            Label.RemoveFromHierarchy();
+            Body.RemoveFromHierarchy();
             Element.Add(textField);
 
-            textField.RegisterCallback<FocusOutEvent>(evt =>
+            textField.RegisterCallback<FocusOutEvent>(_ =>
             {
-                Value = textField.value;
-                Element.Add(Label);
+                Value = (T)(object)textField.value;
                 textField.RemoveFromHierarchy();
                 Element.RemoveFromClassList("input-cell");
+                Element.Add(Body);
+                Refresh();
             });
 
             textField.Focus();
         }
-    }
 
-    public class Cell
-    {
-        public Cell(int row, int column, float width = 100f)
+        private void StartEditingAsInt()
         {
-            Row = row;
-            Column = column;
-            Element = new VisualElement();
-            Width = width;
-            Element.AddToClassList("cell");
+            var integerField = new IntegerField { value = Convert.ToInt32(Value), };
+            integerField.style.width = Width;
+            Element.AddToClassList("input-cell");
+
+            Body.RemoveFromHierarchy();
+            Element.Add(integerField);
+
+            integerField.RegisterCallback<FocusOutEvent>(_ =>
+            {
+                Value = (T)(object)integerField.value;
+                integerField.RemoveFromHierarchy();
+                Element.RemoveFromClassList("input-cell");
+                Element.Add(Body);
+                Refresh();
+            });
+
+            integerField.Focus();
         }
 
-        public readonly int Row;
-        public readonly int Column;
+        private void StartEditingAsFloat()
+        {
+            var floatField = new FloatField { value = Convert.ToSingle(Value), };
+            floatField.style.width = Width;
+            Element.AddToClassList("input-cell");
+
+            Body.RemoveFromHierarchy();
+            Element.Add(floatField);
+
+            floatField.RegisterCallback<FocusOutEvent>(_ =>
+            {
+                Value = (T)(object)floatField.value;
+                floatField.RemoveFromHierarchy();
+                Element.RemoveFromClassList("input-cell");
+                Element.Add(Body);
+                Refresh();
+            });
+
+            floatField.Focus();
+        }
+
+        private void StartEditingAsBool()
+        {
+            var toggle = new Toggle { value = Convert.ToBoolean(Value) };
+            toggle.style.width = Width;
+            Element.AddToClassList("input-cell");
+
+            Body.RemoveFromHierarchy();
+            Element.Add(toggle);
+
+            toggle.RegisterCallback<ChangeEvent<bool>>(evt =>
+            {
+                Value = (T)(object)evt.newValue;
+                toggle.RemoveFromHierarchy();
+                Element.RemoveFromClassList("input-cell");
+                Element.Add(Body);
+                Refresh();
+            });
+
+            toggle.Focus();
+        }
+
+        #endregion
+    }
+
+    public abstract class Cell
+    {
         public readonly VisualElement Element;
+
+        public Cell<T> As<T>() => this as Cell<T>;
 
         public float Width
         {
             get => Element.resolvedStyle.width;
             set => Element.style.width = value;
+        }
+
+        public Cell(float width = 100f)
+        {
+            Element = new VisualElement();
+            Element.AddToClassList("cell");
+            Width = width;
+        }
+
+        public abstract void StartEditing();
+        public abstract void CopyFrom(Cell from);
+        public abstract void Clear();
+    }
+
+    public class Col
+    {
+        public readonly VisualElement Element;
+        public readonly List<Cell> Cells = new();
+
+        public float Width
+        {
+            get => Element.resolvedStyle.width;
+            set
+            {
+                Element.style.width = value;
+                foreach (var cell in Cells) cell.Width = value;
+            }
         }
     }
 
