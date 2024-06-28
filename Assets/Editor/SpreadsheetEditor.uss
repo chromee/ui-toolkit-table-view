@@ -1,4 +1,4 @@
-﻿.header-cell {
+.header-cell {
     border-bottom-width: 1px;
     border-right-width: 1px;
     border-bottom-color: black;
@@ -32,19 +32,47 @@
     border-right-color: black;
     padding: 5px 10px;
     overflow: hidden;
+    justify-content: space-around;
+}
+
+.cell > Toggle {
+    flex-grow: 0;
+    align-self: flex-start;
+    margin-top: 0;
+    margin-right: 0;
+    margin-bottom: 0;
+    margin-left: 0;
 }
 
 .input-cell {
     padding: 0;
-    margin: 0;
-    border-width: 0;
-    background-color: rgba(0, 0, 0, 0);
+    justify-content: space-around;
+    overflow: hidden;
 }
 
-.input-cell > TextInput {
+.input-cell > .unity-base-field {
     padding: 5 10;
     margin: 0;
     border-width: 0;
+    margin-top: 0;
+    margin-right: 0;
+    margin-bottom: 0;
+    margin-left: 0;
+    padding-top: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+    height: 100%;
+}
+
+.input-cell > .unity-base-field > .unity-base-field__input {
+    padding: 5 10;
+    margin: 0;
+    border-width: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
 }
 
 .select-marker {

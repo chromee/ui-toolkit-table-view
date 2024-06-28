@@ -128,10 +128,7 @@ namespace Editor
             if (_copiedCell == null) return;
             if (_selectedCell == null) return;
 
-            _selectedCell.CopyFrom(_copiedCell);
-            _copiedCell = null;
-            _copyMarker.RemoveFromHierarchy();
-            _copyMarker = null;
+            _selectedCell.PasteFrom(_copiedCell);
         }
 
         private void CancelCopy()
@@ -172,6 +169,54 @@ namespace Editor
             _selectedCell = null;
             _selectMarker.RemoveFromHierarchy();
             _selectMarker = null;
+        }
+
+        #endregion
+
+        #region resize
+
+        private bool _isResizing;
+        private int _resizingColumnIndex = -1;
+        private Vector2 _initialMousePosition;
+        private float _initialColumnWidth;
+
+        private void StartResizing(MouseDownEvent evt, int columnIndex)
+        {
+            _isResizing = true;
+            _resizingColumnIndex = columnIndex;
+            _initialMousePosition = evt.mousePosition;
+            _initialColumnWidth = _columnWidths[columnIndex];
+            rootVisualElement.RegisterCallback<MouseMoveEvent>(Resizing);
+            rootVisualElement.RegisterCallback<MouseUpEvent>(StopResizing);
+        }
+
+        private void Resizing(MouseMoveEvent evt)
+        {
+            if (!_isResizing) return;
+
+            var delta = evt.mousePosition.x - _initialMousePosition.x;
+            _columnWidths[_resizingColumnIndex] = Mathf.Max(50, _initialColumnWidth + delta);
+
+            // Update the header cell width
+            _headerCells[_resizingColumnIndex].style.width = _columnWidths[_resizingColumnIndex];
+
+            // Update all cells in the same column
+            for (var i = 0; i < _rowCount; i++)
+            {
+                var cell = _cells[i][_resizingColumnIndex];
+                cell.Width = _columnWidths[_resizingColumnIndex];
+                if (cell == _selectedCell) FitToCell(_selectMarker, cell);
+                if (cell == _copiedCell) FitToCell(_copyMarker, cell);
+            }
+        }
+
+        private void StopResizing(MouseUpEvent evt)
+        {
+            if (!_isResizing) return;
+
+            _isResizing = false;
+            rootVisualElement.UnregisterCallback<MouseMoveEvent>(Resizing);
+            rootVisualElement.UnregisterCallback<MouseUpEvent>(StopResizing);
         }
 
         #endregion
@@ -222,48 +267,6 @@ namespace Editor
             return row;
         }
 
-        #region resize
-
-        private bool _isResizing;
-        private int _resizingColumnIndex = -1;
-        private Vector2 _initialMousePosition;
-        private float _initialColumnWidth;
-
-        private void StartResizing(MouseDownEvent evt, int columnIndex)
-        {
-            _isResizing = true;
-            _resizingColumnIndex = columnIndex;
-            _initialMousePosition = evt.mousePosition;
-            _initialColumnWidth = _columnWidths[columnIndex];
-            rootVisualElement.RegisterCallback<MouseMoveEvent>(Resizing);
-            rootVisualElement.RegisterCallback<MouseUpEvent>(StopResizing);
-        }
-
-        private void Resizing(MouseMoveEvent evt)
-        {
-            if (!_isResizing) return;
-
-            var delta = evt.mousePosition.x - _initialMousePosition.x;
-            _columnWidths[_resizingColumnIndex] = Mathf.Max(50, _initialColumnWidth + delta);
-
-            // Update the header cell width
-            _headerCells[_resizingColumnIndex].style.width = _columnWidths[_resizingColumnIndex];
-
-            // Update all cells in the same column
-            for (var i = 0; i < _rowCount; i++) _cells[i][_resizingColumnIndex].Width = _columnWidths[_resizingColumnIndex];
-        }
-
-        private void StopResizing(MouseUpEvent evt)
-        {
-            if (!_isResizing) return;
-
-            _isResizing = false;
-            rootVisualElement.UnregisterCallback<MouseMoveEvent>(Resizing);
-            rootVisualElement.UnregisterCallback<MouseUpEvent>(StopResizing);
-        }
-
-        #endregion
-
         private void FitToCell(VisualElement fit, Cell cell)
         {
             var targetRect = GetElementRelativeBound(cell, rootVisualElement);
@@ -293,15 +296,24 @@ namespace Editor
     {
         public VisualElement Body;
 
-        public T Value { get; set; }
+        private T _value;
+
+        public T Value
+        {
+            get => _value;
+            set
+            {
+                _value = value;
+                RefreshView();
+            }
+        }
 
         public Cell(T value, float width = 100f) : base(width)
         {
             Value = value;
-            Refresh();
         }
 
-        public void Refresh()
+        private void RefreshView()
         {
             Element.Clear();
 
@@ -315,10 +327,11 @@ namespace Editor
 
         public override void Clear() => Value = default;
 
-        public override void CopyFrom(Cell from)
+        public override void PasteFrom(Cell from)
         {
             if (from.GetType() != GetType()) return;
-            Value = from.As<T>().Value;
+            var v = from.As<T>().Value;
+            Value = v;
         }
 
         #region editing
@@ -346,7 +359,6 @@ namespace Editor
                 textField.RemoveFromHierarchy();
                 Element.RemoveFromClassList("input-cell");
                 Element.Add(Body);
-                Refresh();
             });
 
             textField.Focus();
@@ -367,7 +379,6 @@ namespace Editor
                 integerField.RemoveFromHierarchy();
                 Element.RemoveFromClassList("input-cell");
                 Element.Add(Body);
-                Refresh();
             });
 
             integerField.Focus();
@@ -388,31 +399,14 @@ namespace Editor
                 floatField.RemoveFromHierarchy();
                 Element.RemoveFromClassList("input-cell");
                 Element.Add(Body);
-                Refresh();
             });
 
             floatField.Focus();
         }
 
-        private void StartEditingAsBool()
+        private static void StartEditingAsBool()
         {
-            var toggle = new Toggle { value = Convert.ToBoolean(Value) };
-            toggle.style.width = Width;
-            Element.AddToClassList("input-cell");
-
-            Body.RemoveFromHierarchy();
-            Element.Add(toggle);
-
-            toggle.RegisterCallback<ChangeEvent<bool>>(evt =>
-            {
-                Value = (T)(object)evt.newValue;
-                toggle.RemoveFromHierarchy();
-                Element.RemoveFromClassList("input-cell");
-                Element.Add(Body);
-                Refresh();
-            });
-
-            toggle.Focus();
+            // Bool は最初から Toggle なので何もしない
         }
 
         #endregion
@@ -438,7 +432,7 @@ namespace Editor
         }
 
         public abstract void StartEditing();
-        public abstract void CopyFrom(Cell from);
+        public abstract void PasteFrom(Cell from);
         public abstract void Clear();
     }
 
