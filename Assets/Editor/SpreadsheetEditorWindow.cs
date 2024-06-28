@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using Chorome.Scripts.Editor;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -75,14 +74,31 @@ namespace Editor
 
         private void OnEnable()
         {
-            rootVisualElement.RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
-            rootVisualElement.RegisterCallback<KeyUpEvent>(OnKeyUp, TrickleDown.TrickleDown);
+            RegisterShortcuts();
+            SetupRootVisualElementForKeyboardInput();
+        }
+
+        private void OnDisable()
+        {
+            UnregisterShortcuts();
+        }
+
+        #region shortcuts
+
+        private void SetupRootVisualElementForKeyboardInput()
+        {
             rootVisualElement.focusable = true;
             rootVisualElement.pickingMode = PickingMode.Position;
             rootVisualElement.Focus();
         }
 
-        private void OnDisable()
+        private void RegisterShortcuts()
+        {
+            rootVisualElement.RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
+            rootVisualElement.RegisterCallback<KeyUpEvent>(OnKeyUp, TrickleDown.TrickleDown);
+        }
+
+        private void UnregisterShortcuts()
         {
             rootVisualElement.UnregisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
             rootVisualElement.UnregisterCallback<KeyUpEvent>(OnKeyUp, TrickleDown.TrickleDown);
@@ -105,6 +121,67 @@ namespace Editor
         {
             if (_pressedKeys.Contains(ev.keyCode)) _pressedKeys.Remove(ev.keyCode);
         }
+
+        #endregion
+
+        #region create
+
+        private VisualElement CreateHeaderCell(int columnIndex)
+        {
+            var headerCell = new VisualElement();
+            headerCell.AddToClassList("header-cell");
+            headerCell.style.width = _columnWidths[columnIndex];
+
+            var headerLabel = new Label($"Header {columnIndex}");
+            headerLabel.AddToClassList("header-label");
+            headerCell.Add(headerLabel);
+
+            var resizer = new VisualElement();
+            resizer.AddToClassList("resizer");
+            resizer.RegisterCallback<MouseDownEvent>(evt => StartResizing(evt, columnIndex));
+
+            headerCell.Add(resizer);
+
+            return headerCell;
+        }
+
+        private VisualElement CreateDataRow(int rowIndex)
+        {
+            var row = new VisualElement();
+            row.style.flexDirection = FlexDirection.Row;
+            _cells[rowIndex] = new Cell[_columnCount];
+
+            for (var colIndex = 0; colIndex < _columnCount; colIndex++)
+            {
+                Cell cell;
+
+                if (colIndex == 0) cell = CreateCell(rowIndex, colIndex, $"Cell {rowIndex},{colIndex}");
+                else if (colIndex == 1) cell = CreateCell(rowIndex, colIndex, rowIndex);
+                else if (colIndex == 2) cell = CreateCell(rowIndex, colIndex, rowIndex * 1.1f);
+                else cell = CreateCell(rowIndex, colIndex, rowIndex % 2 == 0);
+
+                if (cell != null) row.Add(cell.Element);
+            }
+
+            return row;
+        }
+
+        private Cell CreateCell<T>(int rowIndex, int colIndex, T value)
+        {
+            var cell = Cell.Create(value, _columnWidths[colIndex]);
+
+            cell.Element.RegisterCallback<MouseDownEvent>(evt =>
+            {
+                if (evt.clickCount == 1) SelectCell(cell);
+                if (evt.clickCount >= 2) cell.StartEditing();
+            });
+
+            _cells[rowIndex][colIndex] = cell;
+
+            return cell;
+        }
+
+        #endregion
 
         #region copy
 
@@ -221,51 +298,7 @@ namespace Editor
 
         #endregion
 
-        private VisualElement CreateHeaderCell(int columnIndex)
-        {
-            var headerCell = new VisualElement();
-            headerCell.AddToClassList("header-cell");
-            headerCell.style.width = _columnWidths[columnIndex];
-
-            var headerLabel = new Label($"Header {columnIndex}");
-            headerLabel.AddToClassList("header-label");
-            headerCell.Add(headerLabel);
-
-            var resizer = new VisualElement();
-            resizer.AddToClassList("resizer");
-            resizer.RegisterCallback<MouseDownEvent>(evt => StartResizing(evt, columnIndex));
-
-            headerCell.Add(resizer);
-
-            return headerCell;
-        }
-
-        private VisualElement CreateDataRow(int rowIndex)
-        {
-            var row = new VisualElement();
-            row.style.flexDirection = FlexDirection.Row;
-            _cells[rowIndex] = new Cell[_columnCount];
-            for (var j = 0; j < _columnCount; j++)
-            {
-                Cell cell = j switch
-                {
-                    0 => new Cell<string>($"Cell {rowIndex},{j}", _columnWidths[j]),
-                    1 => new Cell<int>(rowIndex, _columnWidths[j]),
-                    2 => new Cell<float>(rowIndex * 1.1f, _columnWidths[j]),
-                    _ => new Cell<bool>(rowIndex % 2 == 0, _columnWidths[j]),
-                };
-
-                cell.Element.RegisterCallback<MouseDownEvent>(evt =>
-                {
-                    if (evt.clickCount == 1) SelectCell(cell);
-                    if (evt.clickCount >= 2) cell.StartEditing();
-                });
-                row.Add(cell.Element);
-                _cells[rowIndex][j] = cell;
-            }
-
-            return row;
-        }
+        #region marker util
 
         private void FitToCell(VisualElement fit, Cell cell)
         {
@@ -288,6 +321,8 @@ namespace Editor
 
             return new Rect(localBound.x, localBound.y, localBound.width, localBound.height);
         }
+
+        #endregion
     }
 
     #region cells
@@ -424,7 +459,19 @@ namespace Editor
             set => Element.style.width = value;
         }
 
-        public Cell(float width = 100f)
+        public static Cell Create<T>(T value, float width = 100f)
+        {
+            return value switch
+            {
+                string sv => new Cell<string>(sv, width),
+                int iv => new Cell<int>(iv, width),
+                float fv => new Cell<float>(fv, width),
+                bool bv => new Cell<bool>(bv, width),
+                _ => new Cell<string>(value.ToString(), width),
+            };
+        }
+
+        protected Cell(float width = 100f)
         {
             Element = new VisualElement();
             Element.AddToClassList("cell");
