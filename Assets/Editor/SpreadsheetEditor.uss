@@ -79,6 +79,11 @@
     border-width: 2px;
     border-color: blue;
     position: absolute;
+    display: none;
+}
+
+.selected-cell {
+    background-color: lightblue;
 }
 
 .copy-marker {

@@ -17,13 +17,16 @@ namespace Editor
         private VisualElement _table;
         private VisualElement _headerRow;
 
-        private Cell _selectedCell;
+        private Cell _startSelectedCell;
+        private Cell _endSelectedCell;
         private VisualElement _selectMarker;
 
         private Cell _copiedCell;
         private VisualElement _copyMarker;
 
         private readonly HashSet<KeyCode> _pressedKeys = new();
+
+        #region mtd
 
         [MenuItem("Window/Spreadsheet Editor")]
         public static void ShowExample()
@@ -49,6 +52,9 @@ namespace Editor
             _table = new VisualElement();
             _table.style.flexDirection = FlexDirection.Column;
             _table.style.flexGrow = 1;
+            _table.RegisterCallback<MouseDownEvent>(StartSelecting);
+            _table.RegisterCallback<MouseMoveEvent>(Selecting);
+            _table.RegisterCallback<MouseUpEvent>(EndSelecting);
 
             // Create header row with resizable columns
             _headerRow = new VisualElement();
@@ -70,6 +76,9 @@ namespace Editor
             }
 
             rootVisualElement.Add(_table);
+
+            // Selection marker
+            CreateSelectionMarker();
         }
 
         private void OnEnable()
@@ -82,6 +91,8 @@ namespace Editor
         {
             UnregisterShortcuts();
         }
+
+        #endregion
 
         #region shortcuts
 
@@ -109,11 +120,9 @@ namespace Editor
             _pressedKeys.Add(ev.keyCode);
             if (_pressedKeys.Contains(KeyCode.LeftControl) && _pressedKeys.Contains(KeyCode.C)) CopyCell();
             else if (_pressedKeys.Contains(KeyCode.LeftControl) && _pressedKeys.Contains(KeyCode.V)) PasteCell();
-            else if (_pressedKeys.Contains(KeyCode.Delete)) DeleteCell();
             else if (_pressedKeys.Contains(KeyCode.Escape))
             {
                 CancelCopy();
-                CancelSelect();
             }
         }
 
@@ -168,17 +177,97 @@ namespace Editor
 
         private Cell CreateCell<T>(int rowIndex, int colIndex, T value)
         {
-            var cell = Cell.Create(value, _columnWidths[colIndex]);
+            var cell = Cell.Create(rowIndex, colIndex, value, _columnWidths[colIndex]);
 
             cell.Element.RegisterCallback<MouseDownEvent>(evt =>
             {
-                if (evt.clickCount == 1) SelectCell(cell);
                 if (evt.clickCount >= 2) cell.StartEditing();
             });
 
             _cells[rowIndex][colIndex] = cell;
 
             return cell;
+        }
+
+        #endregion
+
+        #region select
+
+        private void CreateSelectionMarker()
+        {
+            _selectMarker = new VisualElement();
+            _selectMarker.AddToClassList("select-marker");
+            rootVisualElement.Add(_selectMarker);
+        }
+
+        private void StartSelecting(MouseDownEvent evt)
+        {
+            if (evt.button != 0) return; // Left mouse button
+
+            _startSelectedCell = GetCellUnderMouse(evt.localMousePosition);
+            if (_startSelectedCell == null) return;
+
+            _selectMarker.style.display = DisplayStyle.Flex;
+            UpdateSelectionMarker(_startSelectedCell, _startSelectedCell);
+        }
+
+        private void Selecting(MouseMoveEvent evt)
+        {
+            if (_startSelectedCell == null) return;
+
+            var cell = GetCellUnderMouse(evt.localMousePosition);
+            if (cell != null) UpdateSelectionMarker(_startSelectedCell, cell);
+        }
+
+        private void EndSelecting(MouseUpEvent evt)
+        {
+            if (evt.button != 0 || _startSelectedCell == null) return; // Left mouse button
+
+            _endSelectedCell = GetCellUnderMouse(evt.localMousePosition);
+            if (_endSelectedCell != null) HighlightSelectedCells(_startSelectedCell, _endSelectedCell);
+
+            _startSelectedCell = null;
+            _selectMarker.style.display = DisplayStyle.None;
+        }
+
+        private Cell GetCellUnderMouse(Vector2 mousePosition)
+        {
+            foreach (var row in _cells)
+            foreach (var cell in row)
+            {
+                if (cell.Element.worldBound.Contains(mousePosition)) return cell;
+            }
+
+            return null;
+        }
+
+        private void UpdateSelectionMarker(Cell startCell, Cell endCell)
+        {
+            var startPos = startCell.Element.worldBound.position;
+            var endPos = endCell.Element.worldBound.position + endCell.Element.worldBound.size;
+            var markerPos = new Vector2(Math.Min(startPos.x, endPos.x), Math.Min(startPos.y, endPos.y));
+            var markerSize = new Vector2(Math.Abs(endPos.x - startPos.x), Math.Abs(endPos.y - startPos.y));
+
+            _selectMarker.style.left = markerPos.x;
+            _selectMarker.style.top = markerPos.y;
+            _selectMarker.style.width = markerSize.x;
+            _selectMarker.style.height = markerSize.y;
+        }
+
+        private void HighlightSelectedCells(Cell startCell, Cell endCell)
+        {
+            var startRow = Mathf.Min(startCell.Row, endCell.Row);
+            var endRow = Mathf.Max(startCell.Row, endCell.Row);
+            var startCol = Mathf.Min(startCell.Col, endCell.Col);
+            var endCol = Mathf.Max(startCell.Col, endCell.Col);
+
+            for (var i = startRow; i <= endRow; i++)
+            {
+                for (var j = startCol; j <= endCol; j++)
+                {
+                    _cells[i][j].Element.AddToClassList("selected-cell");
+                }
+            }
         }
 
         #endregion
@@ -196,16 +285,16 @@ namespace Editor
                 rootVisualElement.Add(_copyMarker);
             }
 
-            _copiedCell = _selectedCell;
+            _copiedCell = _startSelectedCell;
             FitToCell(_copyMarker, _copiedCell);
         }
 
         private void PasteCell()
         {
             if (_copiedCell == null) return;
-            if (_selectedCell == null) return;
+            if (_startSelectedCell == null) return;
 
-            _selectedCell.PasteFrom(_copiedCell);
+            _startSelectedCell.PasteFrom(_copiedCell);
         }
 
         private void CancelCopy()
@@ -215,37 +304,6 @@ namespace Editor
             _copiedCell = null;
             _copyMarker.RemoveFromHierarchy();
             _copyMarker = null;
-        }
-
-        private void DeleteCell()
-        {
-            _selectedCell.Clear();
-        }
-
-        #endregion
-
-        #region select
-
-        private void SelectCell(Cell cell)
-        {
-            if (_selectMarker == null)
-            {
-                _selectMarker = new VisualElement();
-                _selectMarker.AddToClassList("select-marker");
-                _selectMarker.pickingMode = PickingMode.Ignore;
-                _selectMarker.style.position = Position.Absolute;
-                rootVisualElement.Add(_selectMarker);
-            }
-
-            _selectedCell = cell;
-            FitToCell(_selectMarker, _selectedCell);
-        }
-
-        private void CancelSelect()
-        {
-            _selectedCell = null;
-            _selectMarker.RemoveFromHierarchy();
-            _selectMarker = null;
         }
 
         #endregion
@@ -282,7 +340,7 @@ namespace Editor
             {
                 var cell = _cells[i][_resizingColumnIndex];
                 cell.Width = _columnWidths[_resizingColumnIndex];
-                if (cell == _selectedCell) FitToCell(_selectMarker, cell);
+                // if (cell == _selectedCell) FitToCell(_selectMarker, cell);
                 if (cell == _copiedCell) FitToCell(_copyMarker, cell);
             }
         }
@@ -327,6 +385,46 @@ namespace Editor
 
     #region cells
 
+    public abstract class Cell
+    {
+        public readonly VisualElement Element;
+        public readonly int Row;
+        public readonly int Col;
+
+        public Cell<T> As<T>() => this as Cell<T>;
+
+        public float Width
+        {
+            get => Element.resolvedStyle.width;
+            set => Element.style.width = value;
+        }
+
+        public static Cell Create<T>(int row, int col, T value, float width = 100f)
+        {
+            return value switch
+            {
+                string sv => new Cell<string>(row, col, sv, width),
+                int iv => new Cell<int>(row, col, iv, width),
+                float fv => new Cell<float>(row, col, fv, width),
+                bool bv => new Cell<bool>(row, col, bv, width),
+                _ => new Cell<string>(row, col, value.ToString(), width),
+            };
+        }
+
+        protected Cell(int row, int col, float width = 100f)
+        {
+            Element = new VisualElement();
+            Element.AddToClassList("cell");
+            Row = row;
+            Col = col;
+            Width = width;
+        }
+
+        public abstract void StartEditing();
+        public abstract void PasteFrom(Cell from);
+        public abstract void Clear();
+    }
+
     public class Cell<T> : Cell
     {
         public VisualElement Body;
@@ -343,7 +441,7 @@ namespace Editor
             }
         }
 
-        public Cell(T value, float width = 100f) : base(width)
+        public Cell(int row, int col, T value, float width = 100f) : base(row, col, width)
         {
             Value = value;
         }
@@ -445,42 +543,6 @@ namespace Editor
         }
 
         #endregion
-    }
-
-    public abstract class Cell
-    {
-        public readonly VisualElement Element;
-
-        public Cell<T> As<T>() => this as Cell<T>;
-
-        public float Width
-        {
-            get => Element.resolvedStyle.width;
-            set => Element.style.width = value;
-        }
-
-        public static Cell Create<T>(T value, float width = 100f)
-        {
-            return value switch
-            {
-                string sv => new Cell<string>(sv, width),
-                int iv => new Cell<int>(iv, width),
-                float fv => new Cell<float>(fv, width),
-                bool bv => new Cell<bool>(bv, width),
-                _ => new Cell<string>(value.ToString(), width),
-            };
-        }
-
-        protected Cell(float width = 100f)
-        {
-            Element = new VisualElement();
-            Element.AddToClassList("cell");
-            Width = width;
-        }
-
-        public abstract void StartEditing();
-        public abstract void PasteFrom(Cell from);
-        public abstract void Clear();
     }
 
     public class Col
