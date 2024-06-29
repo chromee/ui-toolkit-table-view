@@ -213,8 +213,8 @@ namespace Editor
         {
             _startSelectedCell = cell;
             _selectMarker.Fit(cell);
-            _selectMarker.Element.style.display = DisplayStyle.Flex;
-            _selectRangeMarker.Element.style.display = DisplayStyle.None;
+            _selectMarker.IsVisible = true;
+            _selectRangeMarker.IsVisible = false;
             _isSelecting = true;
         }
 
@@ -224,7 +224,7 @@ namespace Editor
 
             _endSelectedCell = cell;
             _selectRangeMarker.Fit(_startSelectedCell, _endSelectedCell);
-            _selectRangeMarker.Element.style.display = DisplayStyle.Flex;
+            _selectRangeMarker.IsVisible = true;
         }
 
         private void EndSelecting(MouseUpEvent _)
@@ -237,8 +237,8 @@ namespace Editor
         {
             _startSelectedCell = null;
             _endSelectedCell = null;
-            _selectMarker.Element.style.display = DisplayStyle.None;
-            _selectRangeMarker.Element.style.display = DisplayStyle.None;
+            _selectMarker.IsVisible = false;
+            _selectRangeMarker.IsVisible = false;
         }
 
         private Cell[][] GetSelectedCells()
@@ -284,7 +284,7 @@ namespace Editor
         {
             _copiedCell = _startSelectedCell;
             _copyMarker.Fit(_copiedCell);
-            _copyMarker.Element.style.display = DisplayStyle.Flex;
+            _copyMarker.IsVisible = true;
         }
 
         private void PasteCell()
@@ -304,7 +304,7 @@ namespace Editor
         private void CancelCopy()
         {
             _copiedCell = null;
-            _copyMarker.Element.style.display = DisplayStyle.None;
+            _copyMarker.IsVisible = false;
         }
 
         #endregion
@@ -341,9 +341,9 @@ namespace Editor
             {
                 var cell = _cells[i][_resizingColumnIndex];
                 cell.Width = _columnWidths[_resizingColumnIndex];
-                if (cell == _startSelectedCell) _selectMarker.Fit(cell);
-                if (IsSelected(cell)) _selectRangeMarker.Fit(_startSelectedCell, _endSelectedCell);
-                if (cell == _copiedCell) _copyMarker.Fit(cell);
+                if (_selectMarker.IsVisible) _selectMarker.Fit(_startSelectedCell);
+                if (_selectRangeMarker.IsVisible) _selectRangeMarker.Fit(_startSelectedCell, _endSelectedCell);
+                if (_copyMarker.IsVisible) _copyMarker.Fit(_copiedCell);
             }
         }
 
@@ -532,13 +532,19 @@ namespace Editor
         public readonly VisualElement Element;
         private readonly VisualElement _rootVisualElement;
 
+        public bool IsVisible
+        {
+            get => Element.style.display == DisplayStyle.Flex;
+            set => Element.style.display = value ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
         public Marker(VisualElement rootVisualElement, string className)
         {
             _rootVisualElement = rootVisualElement;
             Element = new VisualElement();
             Element.AddToClassList(className);
             Element.pickingMode = PickingMode.Ignore;
-            Element.style.display = DisplayStyle.None;
+            IsVisible = false;
             _rootVisualElement.Add(Element);
         }
 
