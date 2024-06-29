@@ -122,6 +122,9 @@ namespace Editor
             _pressedKeys.Add(ev.keyCode);
             if (_pressedKeys.Contains(KeyCode.LeftControl) && _pressedKeys.Contains(KeyCode.C)) CopyCell();
             else if (_pressedKeys.Contains(KeyCode.LeftControl) && _pressedKeys.Contains(KeyCode.V)) PasteCell();
+            else if (_pressedKeys.Contains(KeyCode.LeftControl) && _pressedKeys.Contains(KeyCode.LeftShift) && _pressedKeys.Contains(KeyCode.Z)) Redo();
+            else if (_pressedKeys.Contains(KeyCode.LeftControl) && _pressedKeys.Contains(KeyCode.Z)) Undo();
+            else if (_pressedKeys.Contains(KeyCode.LeftControl) && _pressedKeys.Contains(KeyCode.Y)) Redo();
             else if (_pressedKeys.Contains(KeyCode.Escape)) CancelAll();
         }
 
@@ -174,7 +177,11 @@ namespace Editor
                 else if (colIndex == 2) cell = CreateCell(rowIndex, colIndex, rowIndex * 1.1f);
                 else cell = CreateCell(rowIndex, colIndex, rowIndex % 2 == 0);
 
-                if (cell != null) row.Add(cell.Element);
+                if (cell != null)
+                {
+                    row.Add(cell.Element);
+                    cell.OnValueChangedFromEdit += (from, to) => AddUndoCommand(cell, from, to);
+                }
             }
 
             return row;
@@ -294,17 +301,113 @@ namespace Editor
             var selectedCells = GetSelectedCells();
             if (selectedCells == null || !selectedCells.Any()) return;
 
+            var commandSet = new CommandSet();
             foreach (var row in selectedCells)
             foreach (var cell in row)
             {
+                commandSet.Commands.Add(new CommandSet.Command { Cell = cell, From = cell.Val, To = _copiedCell.Val });
                 cell.PasteFrom(_copiedCell);
             }
+
+            AddUndoCommand(commandSet);
         }
 
         private void CancelCopy()
         {
             _copiedCell = null;
             _copyMarker.IsVisible = false;
+        }
+
+        #endregion
+
+        #region undo & redo
+
+        private readonly Stack<CommandSet> _undoStack = new();
+        private readonly Stack<CommandSet> _redoStack = new();
+
+        private void AddUndoCommand(Cell cell, object from, object to)
+        {
+            var command = new CommandSet.Command { Cell = cell, From = from, To = to };
+            _undoStack.Push(new CommandSet(command));
+            _redoStack.Clear();
+        }
+
+        private void AddUndoCommand(CommandSet commandSet)
+        {
+            _undoStack.Push(commandSet);
+            _redoStack.Clear();
+        }
+
+        private void Undo()
+        {
+            if (_undoStack.Count == 0) return;
+
+            var commandSet = _undoStack.Pop();
+            commandSet.Undo();
+            _redoStack.Push(commandSet);
+            rootVisualElement.Focus();
+        }
+
+        private void Redo()
+        {
+            if (_redoStack.Count == 0) return;
+
+            var commandSet = _redoStack.Pop();
+            commandSet.Redo();
+            _undoStack.Push(commandSet);
+            rootVisualElement.Focus();
+        }
+
+        private class CommandSet
+        {
+            public readonly Command SingleCommand;
+            public readonly List<Command> Commands;
+
+            public CommandSet(Command singleCommand) => SingleCommand = singleCommand;
+            public CommandSet() => Commands = new List<Command>();
+
+            public class Command
+            {
+                public Cell Cell;
+                public object From;
+                public object To;
+
+                public void Undo()
+                {
+                    if (Cell == null) return;
+
+                    if (From is string fromS) Cell.As<string>().Value = fromS;
+                    else if (From is int fromI) Cell.As<int>().Value = fromI;
+                    else if (From is float fromF) Cell.As<float>().Value = fromF;
+                    else if (From is bool fromB) Cell.As<bool>().Value = fromB;
+                }
+
+                public void Redo()
+                {
+                    if (Cell == null) return;
+
+                    if (To is string toS) Cell.As<string>().Value = toS;
+                    else if (To is int toI) Cell.As<int>().Value = toI;
+                    else if (To is float toF) Cell.As<float>().Value = toF;
+                    else if (To is bool toB) Cell.As<bool>().Value = toB;
+                }
+            }
+
+            public void Undo()
+            {
+                if (SingleCommand != null) SingleCommand.Undo();
+                else if (Commands != null)
+                    foreach (var command in Commands)
+                        command.Undo();
+            }
+
+            public void Redo()
+            {
+                if (SingleCommand != null) SingleCommand.Redo();
+                else if (Commands != null)
+                    foreach (var command in Commands)
+                        command.Redo();
+            }
         }
 
         #endregion
@@ -332,11 +435,8 @@ namespace Editor
 
             var delta = evt.mousePosition.x - _initialMousePosition.x;
             _columnWidths[_resizingColumnIndex] = Mathf.Max(50, _initialColumnWidth + delta);
-
-            // Update the header cell width
             _headerCells[_resizingColumnIndex].style.width = _columnWidths[_resizingColumnIndex];
 
-            // Update all cells in the same column
             for (var i = 0; i < _rowCount; i++)
             {
                 var cell = _cells[i][_resizingColumnIndex];
@@ -367,6 +467,9 @@ namespace Editor
         public readonly int Row;
         public readonly int Col;
         public Vector2 Position => new(Col, Row);
+
+        public abstract object Val { get; }
+        public abstract event Action<object, object> OnValueChangedFromEdit;
 
         public Cell<T> As<T>() => this as Cell<T>;
 
@@ -404,7 +507,9 @@ namespace Editor
 
     public class Cell<T> : Cell
     {
-        public VisualElement Body;
+        private VisualElement _body;
+
+        public override event Action<object, object> OnValueChangedFromEdit;
 
         private T _value;
 
@@ -418,6 +523,8 @@ namespace Editor
             }
         }
 
+        public override object Val => Value;
+
         public Cell(int row, int col, T value, float width = 100f) : base(row, col, width)
         {
             Value = value;
@@ -427,17 +534,13 @@ namespace Editor
         {
             Element.Clear();
 
-            if (typeof(T) == typeof(string)) Body = new Label { text = Convert.ToString(Value) };
-            else if (typeof(T) == typeof(int)) Body = new Label { text = Convert.ToInt32(Value).ToString() };
-            else if (typeof(T) == typeof(float)) Body = new Label { text = Convert.ToSingle(Value).ToString(CultureInfo.InvariantCulture) };
-            else if (typeof(T) == typeof(bool))
-            {
-                var toggle = new Toggle { text = string.Empty, value = Convert.ToBoolean(Value) };
-                toggle.RegisterValueChangedCallback(evt => Value = (T)(object)evt.newValue);
-                Body = toggle;
-            }
+            if (typeof(T) == typeof(string)) _body = new Label { text = Convert.ToString(Value) };
+            else if (typeof(T) == typeof(int)) _body = new Label { text = Convert.ToInt32(Value).ToString() };
+            else if (typeof(T) == typeof(float)) _body = new Label { text = Convert.ToSingle(Value).ToString(CultureInfo.InvariantCulture) };
+            else if (typeof(T) == typeof(bool)) _body = CreateEditingBodyAsBool();
+            else _body = new Label { text = Convert.ToString(Value) };
 
-            Element.Add(Body);
+            Element.Add(_body);
         }
 
         public override void Clear() => Value = default;
@@ -449,6 +552,24 @@ namespace Editor
             Value = v;
         }
 
+        #region create body
+
+        private VisualElement CreateEditingBodyAsBool()
+        {
+            // Bool は常時 Toggle
+            var toggle = new Toggle { text = string.Empty, value = Convert.ToBoolean(Value) };
+            toggle.RegisterValueChangedCallback(evt =>
+            {
+                var prev = Value;
+                Value = (T)(object)evt.newValue;
+                OnValueChangedFromEdit?.Invoke(prev, Value);
+            });
+
+            return toggle;
+        }
+
+        #endregion
+
         #region editing
 
         public override void StartEditing()
@@ -456,7 +577,7 @@ namespace Editor
             if (typeof(T) == typeof(string)) StartEditingAsString();
             else if (typeof(T) == typeof(int)) StartEditingAsInt();
             else if (typeof(T) == typeof(float)) StartEditingAsFloat();
-            else if (typeof(T) == typeof(bool)) StartEditingAsBool();
+            // else if (typeof(T) == typeof(bool)) StartEditingAsBool(); // Bool は常時 Toggle なので切り替え不要
         }
 
         private void StartEditingAsString()
@@ -465,15 +586,17 @@ namespace Editor
             textField.style.width = Width;
             Element.AddToClassList("input-cell");
 
-            Body.RemoveFromHierarchy();
+            _body.RemoveFromHierarchy();
             Element.Add(textField);
 
             textField.RegisterCallback<FocusOutEvent>(_ =>
             {
+                var prev = Value;
                 Value = (T)(object)textField.value;
+                OnValueChangedFromEdit?.Invoke(prev, Value);
                 textField.RemoveFromHierarchy();
                 Element.RemoveFromClassList("input-cell");
-                Element.Add(Body);
+                Element.Add(_body);
             });
 
             textField.Focus();
@@ -485,15 +608,17 @@ namespace Editor
             integerField.style.width = Width;
             Element.AddToClassList("input-cell");
 
-            Body.RemoveFromHierarchy();
+            _body.RemoveFromHierarchy();
             Element.Add(integerField);
 
             integerField.RegisterCallback<FocusOutEvent>(_ =>
             {
+                var prev = Value;
                 Value = (T)(object)integerField.value;
+                OnValueChangedFromEdit?.Invoke(prev, Value);
                 integerField.RemoveFromHierarchy();
                 Element.RemoveFromClassList("input-cell");
-                Element.Add(Body);
+                Element.Add(_body);
             });
 
             integerField.Focus();
@@ -505,23 +630,20 @@ namespace Editor
             floatField.style.width = Width;
             Element.AddToClassList("input-cell");
 
-            Body.RemoveFromHierarchy();
+            _body.RemoveFromHierarchy();
             Element.Add(floatField);
 
             floatField.RegisterCallback<FocusOutEvent>(_ =>
             {
+                var prev = Value;
                 Value = (T)(object)floatField.value;
+                OnValueChangedFromEdit?.Invoke(prev, Value);
                 floatField.RemoveFromHierarchy();
                 Element.RemoveFromClassList("input-cell");
-                Element.Add(Body);
+                Element.Add(_body);
             });
 
             floatField.Focus();
-        }
-
-        private static void StartEditingAsBool()
-        {
-            // Bool は最初から Toggle なので何もしない
         }
 
         #endregion
