@@ -17,9 +17,11 @@ namespace Editor
         private VisualElement _table;
         private VisualElement _headerRow;
 
+        private bool _isSelecting;
         private Cell _startSelectedCell;
         private Cell _endSelectedCell;
         private VisualElement _selectMarker;
+        
 
         private Cell _copiedCell;
         private VisualElement _copyMarker;
@@ -52,9 +54,6 @@ namespace Editor
             _table = new VisualElement();
             _table.style.flexDirection = FlexDirection.Column;
             _table.style.flexGrow = 1;
-            _table.RegisterCallback<MouseDownEvent>(StartSelecting);
-            _table.RegisterCallback<MouseMoveEvent>(Selecting);
-            _table.RegisterCallback<MouseUpEvent>(EndSelecting);
 
             // Create header row with resizable columns
             _headerRow = new VisualElement();
@@ -77,7 +76,6 @@ namespace Editor
 
             rootVisualElement.Add(_table);
 
-            // Selection marker
             CreateSelectionMarker();
         }
 
@@ -85,6 +83,7 @@ namespace Editor
         {
             RegisterShortcuts();
             SetupRootVisualElementForKeyboardInput();
+            SetupRootVisualElementForSelection();
         }
 
         private void OnDisable()
@@ -181,7 +180,13 @@ namespace Editor
 
             cell.Element.RegisterCallback<MouseDownEvent>(evt =>
             {
+                if (evt.clickCount == 1) StartSelecting(cell);
                 if (evt.clickCount >= 2) cell.StartEditing();
+            });
+
+            cell.Element.RegisterCallback<MouseEnterEvent>(_ =>
+            {
+                Selecting(cell);
             });
 
             _cells[rowIndex][colIndex] = cell;
@@ -193,81 +198,39 @@ namespace Editor
 
         #region select
 
+        private void SetupRootVisualElementForSelection()
+        {
+            rootVisualElement.RegisterCallback<MouseUpEvent>(EndSelecting);
+        }
+
         private void CreateSelectionMarker()
         {
             _selectMarker = new VisualElement();
             _selectMarker.AddToClassList("select-marker");
+            _selectMarker.pickingMode = PickingMode.Ignore;
             rootVisualElement.Add(_selectMarker);
         }
 
-        private void StartSelecting(MouseDownEvent evt)
+        private void StartSelecting(Cell cell)
         {
-            if (evt.button != 0) return; // Left mouse button
-
-            _startSelectedCell = GetCellUnderMouse(evt.localMousePosition);
-            if (_startSelectedCell == null) return;
-
+            _startSelectedCell = cell;
             _selectMarker.style.display = DisplayStyle.Flex;
-            UpdateSelectionMarker(_startSelectedCell, _startSelectedCell);
+            FitToCell(_selectMarker, _startSelectedCell, _startSelectedCell);
+            _isSelecting = true;
         }
 
-        private void Selecting(MouseMoveEvent evt)
+        private void Selecting(Cell cell)
         {
-            if (_startSelectedCell == null) return;
+            if (!_isSelecting || _startSelectedCell == null || cell == null) return;
 
-            var cell = GetCellUnderMouse(evt.localMousePosition);
-            if (cell != null) UpdateSelectionMarker(_startSelectedCell, cell);
+            _endSelectedCell = cell;
+            FitToCell(_selectMarker, _startSelectedCell, _endSelectedCell);
         }
 
-        private void EndSelecting(MouseUpEvent evt)
+        private void EndSelecting(MouseUpEvent _)
         {
-            if (evt.button != 0 || _startSelectedCell == null) return; // Left mouse button
-
-            _endSelectedCell = GetCellUnderMouse(evt.localMousePosition);
-            if (_endSelectedCell != null) HighlightSelectedCells(_startSelectedCell, _endSelectedCell);
-
-            _startSelectedCell = null;
-            _selectMarker.style.display = DisplayStyle.None;
-        }
-
-        private Cell GetCellUnderMouse(Vector2 mousePosition)
-        {
-            foreach (var row in _cells)
-            foreach (var cell in row)
-            {
-                if (cell.Element.worldBound.Contains(mousePosition)) return cell;
-            }
-
-            return null;
-        }
-
-        private void UpdateSelectionMarker(Cell startCell, Cell endCell)
-        {
-            var startPos = startCell.Element.worldBound.position;
-            var endPos = endCell.Element.worldBound.position + endCell.Element.worldBound.size;
-            var markerPos = new Vector2(Math.Min(startPos.x, endPos.x), Math.Min(startPos.y, endPos.y));
-            var markerSize = new Vector2(Math.Abs(endPos.x - startPos.x), Math.Abs(endPos.y - startPos.y));
-
-            _selectMarker.style.left = markerPos.x;
-            _selectMarker.style.top = markerPos.y;
-            _selectMarker.style.width = markerSize.x;
-            _selectMarker.style.height = markerSize.y;
-        }
-
-        private void HighlightSelectedCells(Cell startCell, Cell endCell)
-        {
-            var startRow = Mathf.Min(startCell.Row, endCell.Row);
-            var endRow = Mathf.Max(startCell.Row, endCell.Row);
-            var startCol = Mathf.Min(startCell.Col, endCell.Col);
-            var endCol = Mathf.Max(startCell.Col, endCell.Col);
-
-            for (var i = startRow; i <= endRow; i++)
-            {
-                for (var j = startCol; j <= endCol; j++)
-                {
-                    _cells[i][j].Element.AddToClassList("selected-cell");
-                }
-            }
+            if (!_isSelecting) return;
+            _isSelecting = false;
         }
 
         #endregion
@@ -360,8 +323,9 @@ namespace Editor
 
         private void FitToCell(VisualElement fit, Cell cell)
         {
-            var targetRect = GetElementRelativeBound(cell, rootVisualElement);
+            if (fit == null || cell == null) return;
 
+            var targetRect = GetElementRelativeBound(cell, rootVisualElement);
             fit.style.left = targetRect.x - 1;
             fit.style.top = targetRect.y - 1;
             fit.style.width = targetRect.width;
@@ -380,16 +344,71 @@ namespace Editor
             return new Rect(localBound.x, localBound.y, localBound.width, localBound.height);
         }
 
+        private void FitToCell(VisualElement fit, Cell startCell, Cell endCell)
+        {
+            if (fit == null || startCell == null || endCell == null) return;
+
+            if (startCell.Position == endCell.Position) Fit(fit, startCell);
+            else if (startCell.Row <= endCell.Row) // startが上
+            {
+                if (startCell.Col <= endCell.Col) FitTopLeftToBotRight(fit, startCell, endCell);
+                else FitTopRightToBotLeft(fit, startCell, endCell);
+            }
+            else // endが上
+            {
+                if (endCell.Col <= startCell.Col) FitTopLeftToBotRight(fit, endCell, startCell);
+                else FitTopRightToBotLeft(fit, endCell, startCell);
+            }
+        }
+
+        private void Fit(VisualElement fit, Cell cell)
+        {
+            if (fit == null || cell == null) return;
+
+            FitTopLeftToBotRight(fit, cell, cell);
+        }
+
+        private void FitTopLeftToBotRight(VisualElement fit, Cell leftTop, Cell rightBot)
+        {
+            if (fit == null || leftTop == null || rightBot == null) return;
+
+            var startPos = leftTop.Element.worldBound.position;
+            var endPos = rightBot.Element.worldBound.position + rightBot.Element.worldBound.size;
+            var rootBound = rootVisualElement.worldBound;
+
+            fit.style.left = startPos.x - rootBound.x;
+            fit.style.top = startPos.y - rootBound.y;
+            fit.style.width = endPos.x - startPos.x - 1;
+            fit.style.height = endPos.y - startPos.y - 1;
+        }
+
+        private void FitTopRightToBotLeft(VisualElement fit, Cell rightTop, Cell leftBot)
+        {
+            if (fit == null || rightTop == null || leftBot == null) return;
+
+            var leftBotPos = leftBot.Element.worldBound.position;
+            var rightTopPos = rightTop.Element.worldBound.position;
+            var startPos = new Vector2(leftBotPos.x, rightTopPos.y);
+            var endPos = new Vector2(rightTopPos.x + rightTop.Element.worldBound.size.x, leftBotPos.y + leftBot.Element.worldBound.size.y);
+            var rootBound = rootVisualElement.worldBound;
+
+            fit.style.left = startPos.x - rootBound.x;
+            fit.style.top = startPos.y - rootBound.y;
+            fit.style.width = endPos.x - startPos.x - 1;
+            fit.style.height = endPos.y - startPos.y - 1;
+        }
+
         #endregion
     }
 
-    #region cells
+    #region elements
 
     public abstract class Cell
     {
         public readonly VisualElement Element;
         public readonly int Row;
         public readonly int Col;
+        public Vector2 Position => new(Col, Row);
 
         public Cell<T> As<T>() => this as Cell<T>;
 
@@ -543,6 +562,73 @@ namespace Editor
         }
 
         #endregion
+    }
+
+    public class Marker
+    {
+        public readonly VisualElement Element;
+        private readonly VisualElement _rootVisualElement;
+
+        public Marker(VisualElement rootVisualElement, string className)
+        {
+            _rootVisualElement = rootVisualElement;
+            Element = new VisualElement();
+            Element.AddToClassList(className);
+            _rootVisualElement.Add(Element);
+        }
+
+        public void Fit(Cell cell)
+        {
+            if (cell == null) return;
+            FitTopLeftToBotRight(cell, cell);
+        }
+
+        public void Fit(Cell startCell, Cell endCell)
+        {
+            if (startCell == null || endCell == null) return;
+
+            if (startCell.Position == endCell.Position) Fit(startCell);
+            else if (startCell.Row <= endCell.Row) // startが上
+            {
+                if (startCell.Col <= endCell.Col) FitTopLeftToBotRight(startCell, endCell);
+                else FitTopRightToBotLeft(startCell, endCell);
+            }
+            else // endが上
+            {
+                if (endCell.Col <= startCell.Col) FitTopLeftToBotRight(endCell, startCell);
+                else FitTopRightToBotLeft(endCell, startCell);
+            }
+        }
+
+        private void FitTopLeftToBotRight(Cell leftTop, Cell rightBot)
+        {
+            if (leftTop == null || rightBot == null) return;
+
+            var startPos = leftTop.Element.worldBound.position;
+            var endPos = rightBot.Element.worldBound.position + rightBot.Element.worldBound.size;
+            var rootBound = _rootVisualElement.worldBound;
+
+            Element.style.left = startPos.x - rootBound.x;
+            Element.style.top = startPos.y - rootBound.y;
+            Element.style.width = endPos.x - startPos.x - 1;
+            Element.style.height = endPos.y - startPos.y - 1;
+        }
+
+        private void FitTopRightToBotLeft(Cell rightTop, Cell leftBot)
+        {
+            if (rightTop == null || leftBot == null) return;
+
+            var leftBotPos = leftBot.Element.worldBound.position;
+            var rightTopPos = rightTop.Element.worldBound.position;
+            var startPos = new Vector2(leftBotPos.x, rightTopPos.y);
+            var endPos = new Vector2(rightTopPos.x + rightTop.Element.worldBound.size.x, leftBotPos.y + leftBot.Element.worldBound.size.y);
+            var rootBound = _rootVisualElement.worldBound;
+
+            Element.style.left = startPos.x - rootBound.x;
+            Element.style.top = startPos.y - rootBound.y;
+            Element.style.width = endPos.x - startPos.x - 1;
+            Element.style.height = endPos.y - startPos.y - 1;
+        }
     }
 
     public class Col

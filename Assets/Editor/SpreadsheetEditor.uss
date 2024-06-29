@@ -79,11 +79,12 @@
     border-width: 2px;
     border-color: blue;
     position: absolute;
-    display: none;
 }
 
-.selected-cell {
-    background-color: lightblue;
+.select-range-marker {
+    border-width: 1px;
+    border-color: blue;
+    position: absolute;
 }
 
 .copy-marker {
