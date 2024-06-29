@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -20,11 +21,11 @@ namespace Editor
         private bool _isSelecting;
         private Cell _startSelectedCell;
         private Cell _endSelectedCell;
-        private VisualElement _selectMarker;
-        
+        private Marker _selectMarker;
+        private Marker _selectRangeMarker;
 
         private Cell _copiedCell;
-        private VisualElement _copyMarker;
+        private Marker _copyMarker;
 
         private readonly HashSet<KeyCode> _pressedKeys = new();
 
@@ -76,7 +77,9 @@ namespace Editor
 
             rootVisualElement.Add(_table);
 
-            CreateSelectionMarker();
+            _selectMarker = new Marker(rootVisualElement, "select-marker");
+            _selectRangeMarker = new Marker(rootVisualElement, "select-range-marker");
+            _copyMarker = new Marker(rootVisualElement, "copy-marker");
         }
 
         private void OnEnable()
@@ -119,15 +122,18 @@ namespace Editor
             _pressedKeys.Add(ev.keyCode);
             if (_pressedKeys.Contains(KeyCode.LeftControl) && _pressedKeys.Contains(KeyCode.C)) CopyCell();
             else if (_pressedKeys.Contains(KeyCode.LeftControl) && _pressedKeys.Contains(KeyCode.V)) PasteCell();
-            else if (_pressedKeys.Contains(KeyCode.Escape))
-            {
-                CancelCopy();
-            }
+            else if (_pressedKeys.Contains(KeyCode.Escape)) CancelAll();
         }
 
         private void OnKeyUp(KeyUpEvent ev)
         {
             if (_pressedKeys.Contains(ev.keyCode)) _pressedKeys.Remove(ev.keyCode);
+        }
+
+        private void CancelAll()
+        {
+            CancelCopy();
+            CancelSelecting();
         }
 
         #endregion
@@ -203,19 +209,12 @@ namespace Editor
             rootVisualElement.RegisterCallback<MouseUpEvent>(EndSelecting);
         }
 
-        private void CreateSelectionMarker()
-        {
-            _selectMarker = new VisualElement();
-            _selectMarker.AddToClassList("select-marker");
-            _selectMarker.pickingMode = PickingMode.Ignore;
-            rootVisualElement.Add(_selectMarker);
-        }
-
         private void StartSelecting(Cell cell)
         {
             _startSelectedCell = cell;
-            _selectMarker.style.display = DisplayStyle.Flex;
-            FitToCell(_selectMarker, _startSelectedCell, _startSelectedCell);
+            _selectMarker.Fit(cell);
+            _selectMarker.Element.style.display = DisplayStyle.Flex;
+            _selectRangeMarker.Element.style.display = DisplayStyle.None;
             _isSelecting = true;
         }
 
@@ -224,7 +223,8 @@ namespace Editor
             if (!_isSelecting || _startSelectedCell == null || cell == null) return;
 
             _endSelectedCell = cell;
-            FitToCell(_selectMarker, _startSelectedCell, _endSelectedCell);
+            _selectRangeMarker.Fit(_startSelectedCell, _endSelectedCell);
+            _selectRangeMarker.Element.style.display = DisplayStyle.Flex;
         }
 
         private void EndSelecting(MouseUpEvent _)
@@ -233,40 +233,78 @@ namespace Editor
             _isSelecting = false;
         }
 
+        private void CancelSelecting()
+        {
+            _startSelectedCell = null;
+            _endSelectedCell = null;
+            _selectMarker.Element.style.display = DisplayStyle.None;
+            _selectRangeMarker.Element.style.display = DisplayStyle.None;
+        }
+
+        private Cell[][] GetSelectedCells()
+        {
+            if (_startSelectedCell == null) return null;
+            if (_endSelectedCell == null) return new[] { new[] { _startSelectedCell } };
+
+            var top = Mathf.Min(_startSelectedCell.Row, _endSelectedCell.Row);
+            var bottom = Mathf.Max(_startSelectedCell.Row, _endSelectedCell.Row);
+            var left = Mathf.Min(_startSelectedCell.Col, _endSelectedCell.Col);
+            var right = Mathf.Max(_startSelectedCell.Col, _endSelectedCell.Col);
+
+            var selectedCells = new Cell[bottom - top + 1][];
+
+            for (var i = top; i <= bottom; i++)
+            {
+                selectedCells[i - top] = new Cell[right - left + 1];
+                for (var j = left; j <= right; j++) selectedCells[i - top][j - left] = _cells[i][j];
+            }
+
+            return selectedCells;
+        }
+
+        private bool IsSelected(Cell cell)
+        {
+            if (_startSelectedCell == null) return false;
+            if (_endSelectedCell == null) return cell == _startSelectedCell;
+
+            var top = Mathf.Min(_startSelectedCell.Row, _endSelectedCell.Row);
+            var bottom = Mathf.Max(_startSelectedCell.Row, _endSelectedCell.Row);
+            var left = Mathf.Min(_startSelectedCell.Col, _endSelectedCell.Col);
+            var right = Mathf.Max(_startSelectedCell.Col, _endSelectedCell.Col);
+
+            return cell.Row >= top && cell.Row <= bottom &&
+                   cell.Col >= left && cell.Col <= right;
+        }
+
         #endregion
 
-        #region copy
+        #region copy & paste
 
         private void CopyCell()
         {
-            if (_copyMarker == null)
-            {
-                _copyMarker = new VisualElement();
-                _copyMarker.AddToClassList("copy-marker");
-                _copyMarker.pickingMode = PickingMode.Ignore;
-                _copyMarker.style.position = Position.Absolute;
-                rootVisualElement.Add(_copyMarker);
-            }
-
             _copiedCell = _startSelectedCell;
-            FitToCell(_copyMarker, _copiedCell);
+            _copyMarker.Fit(_copiedCell);
+            _copyMarker.Element.style.display = DisplayStyle.Flex;
         }
 
         private void PasteCell()
         {
             if (_copiedCell == null) return;
-            if (_startSelectedCell == null) return;
 
-            _startSelectedCell.PasteFrom(_copiedCell);
+            var selectedCells = GetSelectedCells();
+            if (selectedCells == null || !selectedCells.Any()) return;
+
+            foreach (var row in selectedCells)
+            foreach (var cell in row)
+            {
+                cell.PasteFrom(_copiedCell);
+            }
         }
 
         private void CancelCopy()
         {
-            if (_copiedCell == null) return;
-
             _copiedCell = null;
-            _copyMarker.RemoveFromHierarchy();
-            _copyMarker = null;
+            _copyMarker.Element.style.display = DisplayStyle.None;
         }
 
         #endregion
@@ -303,8 +341,9 @@ namespace Editor
             {
                 var cell = _cells[i][_resizingColumnIndex];
                 cell.Width = _columnWidths[_resizingColumnIndex];
-                // if (cell == _selectedCell) FitToCell(_selectMarker, cell);
-                if (cell == _copiedCell) FitToCell(_copyMarker, cell);
+                if (cell == _startSelectedCell) _selectMarker.Fit(cell);
+                if (IsSelected(cell)) _selectRangeMarker.Fit(_startSelectedCell, _endSelectedCell);
+                if (cell == _copiedCell) _copyMarker.Fit(cell);
             }
         }
 
@@ -315,87 +354,6 @@ namespace Editor
             _isResizing = false;
             rootVisualElement.UnregisterCallback<MouseMoveEvent>(Resizing);
             rootVisualElement.UnregisterCallback<MouseUpEvent>(StopResizing);
-        }
-
-        #endregion
-
-        #region marker util
-
-        private void FitToCell(VisualElement fit, Cell cell)
-        {
-            if (fit == null || cell == null) return;
-
-            var targetRect = GetElementRelativeBound(cell, rootVisualElement);
-            fit.style.left = targetRect.x - 1;
-            fit.style.top = targetRect.y - 1;
-            fit.style.width = targetRect.width;
-            fit.style.height = targetRect.height;
-        }
-
-        private Rect GetElementRelativeBound(Cell cell, VisualElement relativeTo)
-        {
-            var worldBound = cell.Element.worldBound;
-
-            var localBound = worldBound;
-            var containerWorldBound = relativeTo.worldBound;
-            localBound.x -= containerWorldBound.x;
-            localBound.y -= containerWorldBound.y;
-
-            return new Rect(localBound.x, localBound.y, localBound.width, localBound.height);
-        }
-
-        private void FitToCell(VisualElement fit, Cell startCell, Cell endCell)
-        {
-            if (fit == null || startCell == null || endCell == null) return;
-
-            if (startCell.Position == endCell.Position) Fit(fit, startCell);
-            else if (startCell.Row <= endCell.Row) // startが上
-            {
-                if (startCell.Col <= endCell.Col) FitTopLeftToBotRight(fit, startCell, endCell);
-                else FitTopRightToBotLeft(fit, startCell, endCell);
-            }
-            else // endが上
-            {
-                if (endCell.Col <= startCell.Col) FitTopLeftToBotRight(fit, endCell, startCell);
-                else FitTopRightToBotLeft(fit, endCell, startCell);
-            }
-        }
-
-        private void Fit(VisualElement fit, Cell cell)
-        {
-            if (fit == null || cell == null) return;
-
-            FitTopLeftToBotRight(fit, cell, cell);
-        }
-
-        private void FitTopLeftToBotRight(VisualElement fit, Cell leftTop, Cell rightBot)
-        {
-            if (fit == null || leftTop == null || rightBot == null) return;
-
-            var startPos = leftTop.Element.worldBound.position;
-            var endPos = rightBot.Element.worldBound.position + rightBot.Element.worldBound.size;
-            var rootBound = rootVisualElement.worldBound;
-
-            fit.style.left = startPos.x - rootBound.x;
-            fit.style.top = startPos.y - rootBound.y;
-            fit.style.width = endPos.x - startPos.x - 1;
-            fit.style.height = endPos.y - startPos.y - 1;
-        }
-
-        private void FitTopRightToBotLeft(VisualElement fit, Cell rightTop, Cell leftBot)
-        {
-            if (fit == null || rightTop == null || leftBot == null) return;
-
-            var leftBotPos = leftBot.Element.worldBound.position;
-            var rightTopPos = rightTop.Element.worldBound.position;
-            var startPos = new Vector2(leftBotPos.x, rightTopPos.y);
-            var endPos = new Vector2(rightTopPos.x + rightTop.Element.worldBound.size.x, leftBotPos.y + leftBot.Element.worldBound.size.y);
-            var rootBound = rootVisualElement.worldBound;
-
-            fit.style.left = startPos.x - rootBound.x;
-            fit.style.top = startPos.y - rootBound.y;
-            fit.style.width = endPos.x - startPos.x - 1;
-            fit.style.height = endPos.y - startPos.y - 1;
         }
 
         #endregion
@@ -472,7 +430,12 @@ namespace Editor
             if (typeof(T) == typeof(string)) Body = new Label { text = Convert.ToString(Value) };
             else if (typeof(T) == typeof(int)) Body = new Label { text = Convert.ToInt32(Value).ToString() };
             else if (typeof(T) == typeof(float)) Body = new Label { text = Convert.ToSingle(Value).ToString(CultureInfo.InvariantCulture) };
-            else if (typeof(T) == typeof(bool)) Body = new Toggle { text = string.Empty, value = Convert.ToBoolean(Value) };
+            else if (typeof(T) == typeof(bool))
+            {
+                var toggle = new Toggle { text = string.Empty, value = Convert.ToBoolean(Value) };
+                toggle.RegisterValueChangedCallback(evt => Value = (T)(object)evt.newValue);
+                Body = toggle;
+            }
 
             Element.Add(Body);
         }
@@ -574,6 +537,8 @@ namespace Editor
             _rootVisualElement = rootVisualElement;
             Element = new VisualElement();
             Element.AddToClassList(className);
+            Element.pickingMode = PickingMode.Ignore;
+            Element.style.display = DisplayStyle.None;
             _rootVisualElement.Add(Element);
         }
 
@@ -585,9 +550,10 @@ namespace Editor
 
         public void Fit(Cell startCell, Cell endCell)
         {
-            if (startCell == null || endCell == null) return;
+            if (startCell == null) return;
 
-            if (startCell.Position == endCell.Position) Fit(startCell);
+            if (endCell == null) Fit(startCell);
+            else if (startCell.Position == endCell.Position) Fit(startCell);
             else if (startCell.Row <= endCell.Row) // startが上
             {
                 if (startCell.Col <= endCell.Col) FitTopLeftToBotRight(startCell, endCell);

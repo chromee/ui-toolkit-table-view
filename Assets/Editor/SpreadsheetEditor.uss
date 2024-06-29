@@ -77,13 +77,13 @@
 
 .select-marker {
     border-width: 2px;
-    border-color: blue;
+    border-color: rgb(26, 115, 232);
     position: absolute;
 }
 
 .select-range-marker {
     border-width: 1px;
-    border-color: blue;
+    border-color: rgb(26, 115, 232);
     position: absolute;
 }
 
