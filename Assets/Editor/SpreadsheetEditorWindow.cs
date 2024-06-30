@@ -10,8 +10,9 @@ namespace Editor
 {
     public class SpreadsheetEditorWindow : EditorWindow
     {
+        private Table _table;
         private VisualElement[] _headerCells;
-        private readonly List<Cell[]> _dataRows = new();
+        private readonly List<Row> _dataRows = new();
         private Cell[] _emptyRow;
         private float[] _columnWidths;
 
@@ -50,7 +51,8 @@ namespace Editor
                 new ColInfo(typeof(string), "String", 100f),
             });
 
-            rootVisualElement.Add(CreateTable(tableInfo));
+            _table = CreateTable(tableInfo);
+            rootVisualElement.Add(_table.Element);
 
             _selectMarker = new Marker(rootVisualElement, "select-marker");
             _selectRangeMarker = new Marker(rootVisualElement, "select-range-marker");
@@ -73,29 +75,26 @@ namespace Editor
 
         #region create
 
-        private VisualElement CreateTable(TableInfo tableInfo, int rowCount = 10)
+        private Table CreateTable(TableInfo tableInfo, int rowCount = 10)
         {
-            var table = new VisualElement();
-            table.AddToClassList("table");
-
+            var table = new Table();
             var colLength = tableInfo.ColInfos.Length;
-
             _headerCells = new VisualElement[colLength];
             _columnWidths = new float[colLength];
             for (var i = 0; i < colLength; i++) _columnWidths[i] = 100f;
 
-            table.Add(CreateHeaderRow(tableInfo.ColInfos));
+            table.Element.Add(CreateHeaderRow(tableInfo.ColInfos));
 
             // Create data rows
             for (var i = 0; i < rowCount; i++)
             {
                 var row = CreateDataRow(tableInfo.ColInfos);
-                table.Add(row);
+                table.Element.Add(row.Element);
             }
 
             // Create empty row
             var emptyRow = CreateEmptyRow(tableInfo.ColInfos);
-            table.Add(emptyRow);
+            table.Element.Add(emptyRow);
 
             return table;
         }
@@ -121,19 +120,18 @@ namespace Editor
             return headerRow;
         }
 
-        private VisualElement CreateDataRow(ColInfo[] colInfos)
+        private Row CreateDataRow(ColInfo[] colInfos)
         {
-            _dataRows.Add(new Cell[colInfos.Length]);
             var rowIndex = _dataRows.Count - 1;
 
-            var row = new VisualElement();
-            row.AddToClassList("row");
+            var row = new Row(rowIndex);
+            _dataRows.Add(row);
 
             var indexCell = new VisualElement();
             indexCell.AddToClassList("cell");
             indexCell.AddToClassList("index-cell");
             indexCell.Add(new Label(_dataRows.Count.ToString()));
-            row.Add(indexCell);
+            row.Element.Add(indexCell);
 
             for (var i = 0; i < colInfos.Length; i++)
             {
@@ -148,10 +146,8 @@ namespace Editor
                     _ => CreateCell(rowIndex, i, $"Cell {rowIndex},{i}"),
                 };
 
-                _dataRows[rowIndex][i] = cell;
-
-                row.Add(cell.Element);
                 cell.OnValueChangedFromEdit += (from, to) => AddUndoCommand(cell, from, to);
+                row.AddCell(cell);
             }
 
             return row;
@@ -161,12 +157,17 @@ namespace Editor
         {
             _emptyRow = new Cell[colInfos.Length];
 
-            var row = new VisualElement();
-            row.AddToClassList("row");
+            var emptyRow = new VisualElement();
+            emptyRow.AddToClassList("row");
 
             var addRowButton = new Button { text = "+" };
             addRowButton.AddToClassList("add-row-button");
-            row.Add(addRowButton);
+            addRowButton.clicked += () =>
+            {
+                var newRow = CreateDataRow(colInfos);
+                _table.Element.Insert(_table.Element.IndexOf(emptyRow), newRow.Element);
+            };
+            emptyRow.Add(addRowButton);
 
             var rowIndex = _dataRows.Count - 1;
             for (var i = 0; i < colInfos.Length; i++)
@@ -184,11 +185,11 @@ namespace Editor
 
                 _emptyRow[i] = cell;
 
-                row.Add(cell.Element);
+                emptyRow.Add(cell.Element);
                 cell.OnValueChangedFromEdit += (from, to) => AddUndoCommand(cell, from, to);
             }
 
-            return row;
+            return emptyRow;
         }
 
         private VisualElement CreateHeaderCell(ColInfo colInfo, int columnIndex)
@@ -553,11 +554,45 @@ namespace Editor
 
     #region elements
 
+    public class Table
+    {
+        public VisualElement Element;
+
+        public Table()
+        {
+            Element = new VisualElement();
+            Element.AddToClassList("table");
+        }
+    }
+
+    public class Row
+    {
+        public int Index;
+        public readonly VisualElement Element;
+        public readonly List<Cell> Cells = new();
+
+        public Row(int index)
+        {
+            Index = index;
+            Element = new VisualElement();
+            Element.AddToClassList("row");
+        }
+
+        public void AddCell(Cell cell)
+        {
+            Cells.Add(cell);
+            Element.Add(cell.Element);
+        }
+
+        public Cell this[int index] => Cells[index];
+    }
+
     public abstract class Cell
     {
         public readonly VisualElement Element;
-        public readonly int Row;
-        public readonly int Col;
+
+        public int Row;
+        public int Col;
         public Vector2 Position => new(Col, Row);
 
         public abstract object Val { get; }
@@ -590,6 +625,12 @@ namespace Editor
             Row = row;
             Col = col;
             Width = width;
+        }
+
+        public void ChangePosition(int row, int col)
+        {
+            Row = row;
+            Col = col;
         }
 
         public abstract void StartEditing();
