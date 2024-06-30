@@ -197,10 +197,7 @@ namespace Editor
                 if (evt.clickCount >= 2) cell.StartEditing();
             });
 
-            cell.Element.RegisterCallback<MouseEnterEvent>(_ =>
-            {
-                Selecting(cell);
-            });
+            cell.Element.RegisterCallback<MouseEnterEvent>(_ => { Selecting(cell); });
 
             _cells[rowIndex][colIndex] = cell;
 
