@@ -44,11 +44,11 @@ namespace Editor
 
             var tableInfo = new TableInfo("Table", new[]
             {
-                new ColInfo(typeof(string), "String", 100f),
-                new ColInfo(typeof(int), "Int", 100f),
-                new ColInfo(typeof(float), "Float", 100f),
-                new ColInfo(typeof(bool), "Bool", 100f),
-                new ColInfo(typeof(string), "String", 100f),
+                new ColInfo(typeof(string), "String Value", 100f),
+                new ColInfo(typeof(int), "Int Value", 100f),
+                new ColInfo(typeof(float), "Float Value", 100f),
+                new ColInfo(typeof(bool), "✓", 30f),
+                new ColInfo(typeof(string), "String Value 2", 200f),
             });
 
             _table = CreateTable(tableInfo);
@@ -81,7 +81,7 @@ namespace Editor
             var colLength = tableInfo.ColInfos.Length;
             _headerCells = new VisualElement[colLength];
             _columnWidths = new float[colLength];
-            for (var i = 0; i < colLength; i++) _columnWidths[i] = 100f;
+            for (var i = 0; i < colLength; i++) _columnWidths[i] = tableInfo.ColInfos[i].Width;
 
             table.Element.Add(CreateHeaderRow(tableInfo.ColInfos));
 
@@ -122,7 +122,7 @@ namespace Editor
 
         private Row CreateDataRow(ColInfo[] colInfos)
         {
-            var rowIndex = _dataRows.Count - 1;
+            var rowIndex = _dataRows.Count;
 
             var row = new Row(rowIndex);
             _dataRows.Add(row);
