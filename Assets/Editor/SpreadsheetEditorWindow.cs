@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using Editor.Utilities;
+using Editor.VisualElements;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -24,8 +26,6 @@ namespace Editor
 
         private Cell _copiedCell;
         private Marker _copyMarker;
-
-        private readonly HashSet<KeyCode> _pressedKeys = new();
 
         #region mtd
 
@@ -52,7 +52,7 @@ namespace Editor
             });
 
             _table = CreateTable(tableInfo);
-            rootVisualElement.Add(_table.Element);
+            rootVisualElement.Add(_table);
 
             _selectMarker = new Marker(rootVisualElement, "select-marker");
             _selectRangeMarker = new Marker(rootVisualElement, "select-range-marker");
@@ -71,6 +71,12 @@ namespace Editor
             UnregisterShortcuts();
         }
 
+        // デバッグ用
+        // private void OnGUI()
+        // {
+        //     Debug.Log(rootVisualElement.panel.focusController.focusedElement);
+        // }
+
         #endregion
 
         #region create
@@ -83,18 +89,18 @@ namespace Editor
             _columnWidths = new float[colLength];
             for (var i = 0; i < colLength; i++) _columnWidths[i] = tableInfo.ColInfos[i].Width;
 
-            table.Element.Add(CreateHeaderRow(tableInfo.ColInfos));
+            table.Add(CreateHeaderRow(tableInfo.ColInfos));
 
             // Create data rows
             for (var i = 0; i < rowCount; i++)
             {
                 var row = CreateDataRow(tableInfo.ColInfos);
-                table.Element.Add(row.Element);
+                table.Add(row);
             }
 
             // Create empty row
             var emptyRow = CreateEmptyRow(tableInfo.ColInfos);
-            table.Element.Add(emptyRow);
+            table.Add(emptyRow);
 
             return table;
         }
@@ -120,7 +126,7 @@ namespace Editor
             return headerRow;
         }
 
-        private Row CreateDataRow(ColInfo[] colInfos)
+        private Row CreateDataRow(ColInfo[] colInfos, object[] values = null)
         {
             var rowIndex = _dataRows.Count;
 
@@ -131,7 +137,7 @@ namespace Editor
             indexCell.AddToClassList("cell");
             indexCell.AddToClassList("index-cell");
             indexCell.Add(new Label(_dataRows.Count.ToString()));
-            row.Element.Add(indexCell);
+            row.Add(indexCell);
 
             for (var i = 0; i < colInfos.Length; i++)
             {
@@ -139,14 +145,18 @@ namespace Editor
 
                 var cell = Type.GetTypeCode(colInfo.Type) switch
                 {
-                    TypeCode.String => CreateCell(rowIndex, i, $"Cell {rowIndex},{i}"),
-                    TypeCode.Int32 => CreateCell(rowIndex, i, rowIndex),
-                    TypeCode.Single => CreateCell(rowIndex, i, rowIndex * 1.1f),
-                    TypeCode.Boolean => CreateCell(rowIndex, i, rowIndex % 2 == 0),
-                    _ => CreateCell(rowIndex, i, $"Cell {rowIndex},{i}"),
+                    TypeCode.String => CreateCell(rowIndex, i, values != null ? values[i] : $"Cell {rowIndex},{i}"),
+                    TypeCode.Int32 => CreateCell(rowIndex, i, values != null ? values[i] : rowIndex),
+                    TypeCode.Single => CreateCell(rowIndex, i, values != null ? values[i] : rowIndex * 1.1f),
+                    TypeCode.Boolean => CreateCell(rowIndex, i, values != null ? values[i] : rowIndex % 2 == 0),
+                    _ => CreateCell(rowIndex, i, values != null ? values[i] : $"Cell {rowIndex},{i}"),
                 };
 
-                cell.OnValueChangedFromEdit += (from, to) => AddUndoCommand(cell, from, to);
+                cell.OnValueChangedFromEdit += (from, to) =>
+                {
+                    AddUndoCommand(cell, from, to);
+                    rootVisualElement.ExecAfter1Frame(() => rootVisualElement.Focus());
+                };
                 row.AddCell(cell);
             }
 
@@ -164,8 +174,8 @@ namespace Editor
             addRowButton.AddToClassList("add-row-button");
             addRowButton.clicked += () =>
             {
-                var newRow = CreateDataRow(colInfos);
-                _table.Element.Insert(_table.Element.IndexOf(emptyRow), newRow.Element);
+                var newRow = CreateDataRow(colInfos, _emptyRow.Select(cell => cell.Val).ToArray());
+                _table.Insert(_table.IndexOf(emptyRow), newRow);
             };
             emptyRow.Add(addRowButton);
 
@@ -185,8 +195,12 @@ namespace Editor
 
                 _emptyRow[i] = cell;
 
-                emptyRow.Add(cell.Element);
-                cell.OnValueChangedFromEdit += (from, to) => AddUndoCommand(cell, from, to);
+                emptyRow.Add(cell);
+                cell.OnValueChangedFromEdit += (from, to) =>
+                {
+                    AddUndoCommand(cell, from, to);
+                    rootVisualElement.ExecAfter1Frame(() => rootVisualElement.Focus());
+                };
             }
 
             return emptyRow;
@@ -213,13 +227,13 @@ namespace Editor
         {
             var cell = Cell.Create(rowIndex, colIndex, value, _columnWidths[colIndex]);
 
-            cell.Element.RegisterCallback<MouseDownEvent>(evt =>
+            cell.RegisterCallback<MouseDownEvent>(evt =>
             {
                 if (evt.clickCount == 1) StartSelecting(cell);
                 if (evt.clickCount >= 2) cell.StartEditing();
             });
 
-            cell.Element.RegisterCallback<MouseEnterEvent>(_ => { Selecting(cell); });
+            cell.RegisterCallback<MouseEnterEvent>(_ => { Selecting(cell); });
 
             return cell;
         }
@@ -322,11 +336,12 @@ namespace Editor
             foreach (var row in selectedCells)
             foreach (var cell in row)
             {
-                commandSet.Commands.Add(new CommandSet.Command { Cell = cell, From = cell.Val, To = _copiedCell.Val });
-                cell.PasteFrom(_copiedCell);
+                var prev = cell.Val;
+                if (!cell.TryPaste(_copiedCell)) return;
+                commandSet.Commands.Add(new CommandSet.Command { Cell = cell, From = prev, To = _copiedCell.Val });
             }
 
-            AddUndoCommand(commandSet);
+            if (commandSet.Commands.Any()) AddUndoCommand(commandSet);
         }
 
         private void CancelCopy()
@@ -393,20 +408,52 @@ namespace Editor
                 {
                     if (Cell == null) return;
 
-                    if (From is string fromS) Cell.As<string>().Value = fromS;
-                    else if (From is int fromI) Cell.As<int>().Value = fromI;
-                    else if (From is float fromF) Cell.As<float>().Value = fromF;
-                    else if (From is bool fromB) Cell.As<bool>().Value = fromB;
+                    if (From is string fromS)
+                    {
+                        var cell = Cell.As<string>();
+                        if (cell != null) cell.Value = fromS;
+                    }
+                    else if (From is int fromI)
+                    {
+                        var cell = Cell.As<int>();
+                        if (cell != null) cell.Value = fromI;
+                    }
+                    else if (From is float fromF)
+                    {
+                        var cell = Cell.As<float>();
+                        if (cell != null) cell.Value = fromF;
+                    }
+                    else if (From is bool fromB)
+                    {
+                        var cell = Cell.As<bool>();
+                        if (cell != null) cell.Value = fromB;
+                    }
                 }
 
                 public void Redo()
                 {
                     if (Cell == null) return;
 
-                    if (To is string toS) Cell.As<string>().Value = toS;
-                    else if (To is int toI) Cell.As<int>().Value = toI;
-                    else if (To is float toF) Cell.As<float>().Value = toF;
-                    else if (To is bool toB) Cell.As<bool>().Value = toB;
+                    if (To is string toS)
+                    {
+                        var cell = Cell.As<string>();
+                        if (cell != null) cell.Value = toS;
+                    }
+                    else if (To is int toI)
+                    {
+                        var cell = Cell.As<int>();
+                        if (cell != null) cell.Value = toI;
+                    }
+                    else if (To is float toF)
+                    {
+                        var cell = Cell.As<float>();
+                        if (cell != null) cell.Value = toF;
+                    }
+                    else if (To is bool toB)
+                    {
+                        var cell = Cell.As<bool>();
+                        if (cell != null) cell.Value = toB;
+                    }
                 }
             }
 
@@ -488,29 +535,22 @@ namespace Editor
         private void RegisterShortcuts()
         {
             rootVisualElement.RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
-            rootVisualElement.RegisterCallback<KeyUpEvent>(OnKeyUp, TrickleDown.TrickleDown);
         }
 
         private void UnregisterShortcuts()
         {
-            rootVisualElement.UnregisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
-            rootVisualElement.UnregisterCallback<KeyUpEvent>(OnKeyUp, TrickleDown.TrickleDown);
+            rootVisualElement.UnregisterCallback<KeyDownEvent>(OnKeyDown);
         }
 
         private void OnKeyDown(KeyDownEvent ev)
         {
-            _pressedKeys.Add(ev.keyCode);
-            if (_pressedKeys.Contains(KeyCode.LeftControl) && _pressedKeys.Contains(KeyCode.C)) CopyCell();
-            else if (_pressedKeys.Contains(KeyCode.LeftControl) && _pressedKeys.Contains(KeyCode.V)) PasteCell();
-            else if (_pressedKeys.Contains(KeyCode.LeftControl) && _pressedKeys.Contains(KeyCode.LeftShift) && _pressedKeys.Contains(KeyCode.Z)) Redo();
-            else if (_pressedKeys.Contains(KeyCode.LeftControl) && _pressedKeys.Contains(KeyCode.Z)) Undo();
-            else if (_pressedKeys.Contains(KeyCode.LeftControl) && _pressedKeys.Contains(KeyCode.Y)) Redo();
-            else if (_pressedKeys.Contains(KeyCode.Escape)) CancelAll();
-        }
-
-        private void OnKeyUp(KeyUpEvent ev)
-        {
-            if (_pressedKeys.Contains(ev.keyCode)) _pressedKeys.Remove(ev.keyCode);
+            if (ev.keyCode == KeyCode.C && Event.current.control) CopyCell();
+            else if (ev.keyCode == KeyCode.V && Event.current.control) PasteCell();
+            else if (ev.keyCode == KeyCode.Z && Event.current.control && Event.current.shift) Redo();
+            else if (ev.keyCode == KeyCode.Z && Event.current.control) Undo();
+            else if (ev.keyCode == KeyCode.Y && Event.current.control) Redo();
+            else if (ev.keyCode == KeyCode.Escape) CancelAll();
+            else _startSelectedCell?.StartEditingByKeyDown(ev);
         }
 
         private void CancelAll()
@@ -547,314 +587,6 @@ namespace Editor
             Type = type;
             Name = name;
             Width = width;
-        }
-    }
-
-    #endregion
-
-    #region elements
-
-    public class Table
-    {
-        public VisualElement Element;
-
-        public Table()
-        {
-            Element = new VisualElement();
-            Element.AddToClassList("table");
-        }
-    }
-
-    public class Row
-    {
-        public int Index;
-        public readonly VisualElement Element;
-        public readonly List<Cell> Cells = new();
-
-        public Row(int index)
-        {
-            Index = index;
-            Element = new VisualElement();
-            Element.AddToClassList("row");
-        }
-
-        public void AddCell(Cell cell)
-        {
-            Cells.Add(cell);
-            Element.Add(cell.Element);
-        }
-
-        public Cell this[int index] => Cells[index];
-    }
-
-    public abstract class Cell
-    {
-        public readonly VisualElement Element;
-
-        public int Row;
-        public int Col;
-        public Vector2 Position => new(Col, Row);
-
-        public abstract object Val { get; }
-        public abstract event Action<object, object> OnValueChangedFromEdit;
-
-        public Cell<T> As<T>() => this as Cell<T>;
-
-        public float Width
-        {
-            get => Element.resolvedStyle.width;
-            set => Element.style.width = value;
-        }
-
-        public static Cell Create<T>(int row, int col, T value, float width = 100f)
-        {
-            return value switch
-            {
-                string sv => new Cell<string>(row, col, sv, width),
-                int iv => new Cell<int>(row, col, iv, width),
-                float fv => new Cell<float>(row, col, fv, width),
-                bool bv => new Cell<bool>(row, col, bv, width),
-                _ => new Cell<string>(row, col, value.ToString(), width),
-            };
-        }
-
-        protected Cell(int row, int col, float width = 100f)
-        {
-            Element = new VisualElement();
-            Element.AddToClassList("cell");
-            Row = row;
-            Col = col;
-            Width = width;
-        }
-
-        public void ChangePosition(int row, int col)
-        {
-            Row = row;
-            Col = col;
-        }
-
-        public abstract void StartEditing();
-        public abstract void PasteFrom(Cell from);
-        public abstract void Clear();
-    }
-
-    public class Cell<T> : Cell
-    {
-        private VisualElement _body;
-
-        public override event Action<object, object> OnValueChangedFromEdit;
-
-        private T _value;
-
-        public T Value
-        {
-            get => _value;
-            set
-            {
-                _value = value;
-                RefreshView();
-            }
-        }
-
-        public override object Val => Value;
-
-        public Cell(int row, int col, T value, float width = 100f) : base(row, col, width)
-        {
-            Value = value;
-        }
-
-        private void RefreshView()
-        {
-            Element.Clear();
-
-            if (typeof(T) == typeof(string)) _body = new Label { text = Convert.ToString(Value) };
-            else if (typeof(T) == typeof(int)) _body = new Label { text = Convert.ToInt32(Value).ToString() };
-            else if (typeof(T) == typeof(float)) _body = new Label { text = Convert.ToSingle(Value).ToString(CultureInfo.InvariantCulture) };
-            else if (typeof(T) == typeof(bool)) _body = CreateEditingBodyAsBool();
-            else _body = new Label { text = Convert.ToString(Value) };
-
-            Element.Add(_body);
-        }
-
-        public override void Clear() => Value = default;
-
-        public override void PasteFrom(Cell from)
-        {
-            if (from.GetType() != GetType()) return;
-            var v = from.As<T>().Value;
-            Value = v;
-        }
-
-        #region create body
-
-        private VisualElement CreateEditingBodyAsBool()
-        {
-            // Bool は常時 Toggle
-            var toggle = new Toggle { text = string.Empty, value = Convert.ToBoolean(Value) };
-            toggle.RegisterValueChangedCallback(evt =>
-            {
-                var prev = Value;
-                Value = (T)(object)evt.newValue;
-                OnValueChangedFromEdit?.Invoke(prev, Value);
-            });
-
-            return toggle;
-        }
-
-        #endregion
-
-        #region editing
-
-        public override void StartEditing()
-        {
-            if (typeof(T) == typeof(string)) StartEditingAsString();
-            else if (typeof(T) == typeof(int)) StartEditingAsInt();
-            else if (typeof(T) == typeof(float)) StartEditingAsFloat();
-            // else if (typeof(T) == typeof(bool)) StartEditingAsBool(); // Bool は常時 Toggle なので切り替え不要
-        }
-
-        private void StartEditingAsString()
-        {
-            var textField = new TextField { value = Convert.ToString(Value), };
-            textField.style.width = Width;
-            Element.AddToClassList("input-cell");
-
-            _body.RemoveFromHierarchy();
-            Element.Add(textField);
-
-            textField.RegisterCallback<FocusOutEvent>(_ =>
-            {
-                var prev = Value;
-                Value = (T)(object)textField.value;
-                OnValueChangedFromEdit?.Invoke(prev, Value);
-                textField.RemoveFromHierarchy();
-                Element.RemoveFromClassList("input-cell");
-                Element.Add(_body);
-            });
-
-            textField.Focus();
-        }
-
-        private void StartEditingAsInt()
-        {
-            var integerField = new IntegerField { value = Convert.ToInt32(Value), };
-            integerField.style.width = Width;
-            Element.AddToClassList("input-cell");
-
-            _body.RemoveFromHierarchy();
-            Element.Add(integerField);
-
-            integerField.RegisterCallback<FocusOutEvent>(_ =>
-            {
-                var prev = Value;
-                Value = (T)(object)integerField.value;
-                OnValueChangedFromEdit?.Invoke(prev, Value);
-                integerField.RemoveFromHierarchy();
-                Element.RemoveFromClassList("input-cell");
-                Element.Add(_body);
-            });
-
-            integerField.Focus();
-        }
-
-        private void StartEditingAsFloat()
-        {
-            var floatField = new FloatField { value = Convert.ToSingle(Value), };
-            floatField.style.width = Width;
-            Element.AddToClassList("input-cell");
-
-            _body.RemoveFromHierarchy();
-            Element.Add(floatField);
-
-            floatField.RegisterCallback<FocusOutEvent>(_ =>
-            {
-                var prev = Value;
-                Value = (T)(object)floatField.value;
-                OnValueChangedFromEdit?.Invoke(prev, Value);
-                floatField.RemoveFromHierarchy();
-                Element.RemoveFromClassList("input-cell");
-                Element.Add(_body);
-            });
-
-            floatField.Focus();
-        }
-
-        #endregion
-    }
-
-    public class Marker
-    {
-        public readonly VisualElement Element;
-        private readonly VisualElement _rootVisualElement;
-
-        public bool IsVisible
-        {
-            get => Element.style.display == DisplayStyle.Flex;
-            set => Element.style.display = value ? DisplayStyle.Flex : DisplayStyle.None;
-        }
-
-        public Marker(VisualElement rootVisualElement, string className)
-        {
-            _rootVisualElement = rootVisualElement;
-            Element = new VisualElement();
-            Element.AddToClassList(className);
-            Element.pickingMode = PickingMode.Ignore;
-            IsVisible = false;
-            _rootVisualElement.Add(Element);
-        }
-
-        public void Fit(Cell cell)
-        {
-            if (cell == null) return;
-            FitTopLeftToBotRight(cell, cell);
-        }
-
-        public void Fit(Cell startCell, Cell endCell)
-        {
-            if (startCell == null) return;
-
-            if (endCell == null) Fit(startCell);
-            else if (startCell.Position == endCell.Position) Fit(startCell);
-            else if (startCell.Row <= endCell.Row) // startが上
-            {
-                if (startCell.Col <= endCell.Col) FitTopLeftToBotRight(startCell, endCell);
-                else FitTopRightToBotLeft(startCell, endCell);
-            }
-            else // endが上
-            {
-                if (endCell.Col <= startCell.Col) FitTopLeftToBotRight(endCell, startCell);
-                else FitTopRightToBotLeft(endCell, startCell);
-            }
-        }
-
-        private void FitTopLeftToBotRight(Cell leftTop, Cell rightBot)
-        {
-            if (leftTop == null || rightBot == null) return;
-
-            var startPos = leftTop.Element.worldBound.position;
-            var endPos = rightBot.Element.worldBound.position + rightBot.Element.worldBound.size;
-            var rootBound = _rootVisualElement.worldBound;
-
-            Element.style.left = startPos.x - rootBound.x;
-            Element.style.top = startPos.y - rootBound.y;
-            Element.style.width = endPos.x - startPos.x - 1;
-            Element.style.height = endPos.y - startPos.y - 1;
-        }
-
-        private void FitTopRightToBotLeft(Cell rightTop, Cell leftBot)
-        {
-            if (rightTop == null || leftBot == null) return;
-
-            var leftBotPos = leftBot.Element.worldBound.position;
-            var rightTopPos = rightTop.Element.worldBound.position;
-            var startPos = new Vector2(leftBotPos.x, rightTopPos.y);
-            var endPos = new Vector2(rightTopPos.x + rightTop.Element.worldBound.size.x, leftBotPos.y + leftBot.Element.worldBound.size.y);
-            var rootBound = _rootVisualElement.worldBound;
-
-            Element.style.left = startPos.x - rootBound.x;
-            Element.style.top = startPos.y - rootBound.y;
-            Element.style.width = endPos.x - startPos.x - 1;
-            Element.style.height = endPos.y - startPos.y - 1;
         }
     }
 
