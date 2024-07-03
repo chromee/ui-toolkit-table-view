@@ -28,7 +28,7 @@
     border-right-width: 2px;
 }
 
-.top-index-cell {
+.origin-cell {
     border-bottom-width: 2px;
     background-color: rgb(42, 42, 42);
 }

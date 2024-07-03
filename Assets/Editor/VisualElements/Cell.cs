@@ -43,12 +43,6 @@ namespace Editor.VisualElements
             Width = width;
         }
 
-        public void ChangePosition(int row, int col)
-        {
-            Row = row;
-            Col = col;
-        }
-
         public abstract void StartEditing();
         public abstract void StartEditingByKeyDown(KeyDownEvent evt);
         public abstract bool TryPaste(Cell from);
@@ -141,10 +135,18 @@ namespace Editor.VisualElements
             if (typeof(T) == typeof(string))
             {
                 var str = evt.keyCode.KeyCodeToString(Event.current.shift);
-                if (!string.IsNullOrEmpty(str)) StartEditingAsString(str);
+                if (!string.IsNullOrEmpty(str)) this.ExecAfter1Frame(() => StartEditingAsString(str));
             }
-            else if (typeof(T) == typeof(int) && evt.keyCode.IsNumericKey()) StartEditingAsInt(evt.keyCode.GetNumericValue());
-            else if (typeof(T) == typeof(float) && evt.keyCode.IsNumericKey()) StartEditingAsFloat(evt.keyCode.GetNumericValue());
+            else if (typeof(T) == typeof(int) && evt.keyCode.IsNumericKey())
+            {
+                var num = evt.keyCode.GetNumericValue();
+                this.ExecAfter1Frame(() => StartEditingAsInt(num));
+            }
+            else if (typeof(T) == typeof(float) && evt.keyCode.IsNumericKey())
+            {
+                var num = evt.keyCode.GetNumericValue();
+                this.ExecAfter1Frame(() => StartEditingAsFloat(num));
+            }
         }
 
         private void StartEditingAsString(string value = null)
@@ -170,7 +172,7 @@ namespace Editor.VisualElements
                 _isEditing = false;
             });
 
-            this.ExecAfter1Frame(() => textField.Focus());
+            textField.Focus();
         }
 
         private void StartEditingAsInt(int value = int.MinValue)
@@ -195,8 +197,7 @@ namespace Editor.VisualElements
                 Add(_body);
                 _isEditing = false;
             });
-
-            schedule.Execute(() => integerField.Focus()).ExecuteLater(0);
+            integerField.Focus();
         }
 
         private void StartEditingAsFloat(float value = float.MinValue)
@@ -223,7 +224,7 @@ namespace Editor.VisualElements
                 _isEditing = false;
             });
 
-            schedule.Execute(() => floatField.Focus()).ExecuteLater(0);
+            floatField.Focus();
         }
 
         #endregion
