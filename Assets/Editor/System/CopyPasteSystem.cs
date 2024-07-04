@@ -38,7 +38,7 @@ namespace Editor.System
             foreach (var cell in row)
             {
                 var prev = cell.Val;
-                if (!cell.TryPaste(CopiedCell)) return;
+                if (!cell.TryPaste(CopiedCell)) continue;
                 commandSet.Commands.Add(new CommandSet.Command { Cell = cell, From = prev, To = CopiedCell.Val });
             }
 

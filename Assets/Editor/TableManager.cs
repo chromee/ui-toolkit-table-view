@@ -37,19 +37,23 @@ namespace Editor
             foreach (var dataRow in Table.DataRows)
             foreach (var cell in dataRow.Cells)
             {
-                CellCallback(cell);
+                RegisterCellCallback(cell);
             }
 
-            Table.EmptyRow.AddRowButton.clicked += () => Table.AddDataRow(colInfos, Table.EmptyRow.Cells.Select(cell => cell.Val).ToArray());
+            Table.EmptyRow.AddRowButton.clicked += () =>
+            {
+                var dataRow = Table.AddDataRow(colInfos, Table.EmptyRow.Cells.Select(cell => cell.Val).ToArray());
+                foreach (var cell in dataRow.Cells) RegisterCellCallback(cell);
+            };
             foreach (var cell in Table.EmptyRow.Cells)
             {
-                CellCallback(cell);
+                RegisterCellCallback(cell);
             }
 
             rootVisualElement.RegisterCallback<MouseUpEvent>(SelectSystem.EndSelecting);
         }
 
-        private void CellCallback(Cell cell)
+        private void RegisterCellCallback(Cell cell)
         {
             cell.OnValueChangedFromEdit += (from, to) =>
             {

@@ -1,4 +1,5 @@
-﻿using Editor.VisualElements;
+﻿using System.Collections.Generic;
+using Editor.VisualElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -8,10 +9,9 @@ namespace Editor.System
     {
         private readonly VisualElement _rootVisualElement;
         private readonly Table _table;
+        private readonly ColInfo[] _colInfos;
         private readonly SelectSystem _selectSystem;
         private readonly CopyPasteSystem _copyPasteSystem;
-
-        private readonly float[] _columnWidths;
 
         private bool _isResizing;
         private int _resizingColumnIndex = -1;
@@ -22,9 +22,9 @@ namespace Editor.System
         {
             _rootVisualElement = rootVisualElement;
             _table = table;
+            _colInfos = colInfos;
             _selectSystem = selectSystem;
             _copyPasteSystem = copyPasteSystem;
-            _columnWidths = new float[colInfos.Length];
         }
 
         public void StartResizing(MouseDownEvent evt, int columnIndex)
@@ -32,7 +32,7 @@ namespace Editor.System
             _isResizing = true;
             _resizingColumnIndex = columnIndex;
             _initialMousePosition = evt.mousePosition;
-            _initialColumnWidth = _columnWidths[columnIndex];
+            _initialColumnWidth = _colInfos[columnIndex].Width;
             _rootVisualElement.RegisterCallback<MouseMoveEvent>(Resizing);
             _rootVisualElement.RegisterCallback<MouseUpEvent>(StopResizing);
         }
@@ -42,14 +42,15 @@ namespace Editor.System
             if (!_isResizing) return;
 
             var delta = evt.mousePosition.x - _initialMousePosition.x;
-            _columnWidths[_resizingColumnIndex] = Mathf.Max(50, _initialColumnWidth + delta);
-            _table.HeaderRow.Cells[_resizingColumnIndex].style.width = _columnWidths[_resizingColumnIndex];
-            _table.EmptyRow.Cells[_resizingColumnIndex].Width = _columnWidths[_resizingColumnIndex];
+            var width = Mathf.Max(50, _initialColumnWidth + delta);
+            _colInfos[_resizingColumnIndex].Width = width;
+            _table.HeaderRow.Cells[_resizingColumnIndex].style.width = width;
+            _table.EmptyRow.Cells[_resizingColumnIndex].Width = width;
 
             foreach (var row in _table.DataRows)
             {
                 var cell = row[_resizingColumnIndex];
-                cell.Width = _columnWidths[_resizingColumnIndex];
+                cell.Width = width;
                 if (cell == _selectSystem.StartSelectedCell)
                 {
                     if (_selectSystem.EndSelectedCell != null && _selectSystem.IsSelected(cell)) _selectSystem.FitRangeMarker();

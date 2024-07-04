@@ -35,11 +35,12 @@ namespace Editor.VisualElements
             Add(EmptyRow);
         }
 
-        public void AddDataRow(ColInfo[] colInfos, object[] rowValues)
+        public DataRow AddDataRow(ColInfo[] colInfos, object[] rowValues)
         {
             var dataRow = new DataRow(_dataRows.Count, colInfos, rowValues);
             _dataRows.Add(dataRow);
             Insert(Children().Count() - 1, dataRow);
+            return dataRow;
         }
     }
 
@@ -47,7 +48,7 @@ namespace Editor.VisualElements
     {
         public readonly Type Type;
         public readonly string Name;
-        public readonly float Width;
+        public float Width { get; set; }
 
         public ColInfo(Type type, string name, float width)
         {

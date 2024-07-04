@@ -31,27 +31,28 @@ namespace Editor
                 new ColInfo(typeof(string), "String Value 2", 200f),
             };
 
-            var values = new object[][]
+            var values = new[]
             {
                 new object[] { "A", 1, 1.1f, true, "Z" },
-                new object[] { "B", 1, 1.1f, false, "Y" },
-                new object[] { "C", 1, 1.1f, true, "X" },
-                new object[] { "D", 1, 1.1f, false, "W" },
-                new object[] { "E", 1, 1.1f, true, "V" },
+                new object[] { "B", 2, 2.2f, false, "Y" },
+                new object[] { "C", 3, 3.3f, true, "X" },
+                new object[] { "D", 4, 4.4f, false, "W" },
+                new object[] { "E", 5, 5.5f, true, "V" },
             };
 
             _tableManager = new TableManager(rootVisualElement, tableInfo, values);
+            _tableManager.ShortcutKeySystem.SetupRootVisualElementForKeyboardInput();
+            _tableManager.ShortcutKeySystem.RegisterShortcuts();
         }
 
         private void OnEnable()
         {
-            _tableManager.ShortcutKeySystem.RegisterShortcuts();
-            _tableManager.ShortcutKeySystem.SetupRootVisualElementForKeyboardInput();
+            _tableManager?.ShortcutKeySystem.RegisterShortcuts();
         }
 
         private void OnDisable()
         {
-            _tableManager.ShortcutKeySystem.UnregisterShortcuts();
+            _tableManager?.ShortcutKeySystem.UnregisterShortcuts();
         }
 
         // デバッグ用
