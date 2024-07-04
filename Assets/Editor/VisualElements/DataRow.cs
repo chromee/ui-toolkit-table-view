@@ -8,6 +8,7 @@ namespace Editor.VisualElements
     {
         public readonly int Index;
 
+        public IndexCell IndexCell { get; private set; }
         private readonly Cell[] _cells;
         public IReadOnlyList<Cell> Cells => _cells;
         public new Cell this[int index] => _cells[index];
@@ -17,7 +18,8 @@ namespace Editor.VisualElements
             AddToClassList("row");
 
             Index = index;
-            Add(new IndexCell(Index + 1));
+            IndexCell = new IndexCell(Index);
+            Add(IndexCell);
 
             _cells = new Cell[colInfos.Length];
             for (var i = 0; i < colInfos.Length; i++)

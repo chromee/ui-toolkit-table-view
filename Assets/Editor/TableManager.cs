@@ -35,9 +35,12 @@ namespace Editor
             }
 
             foreach (var dataRow in Table.DataRows)
-            foreach (var cell in dataRow.Cells)
             {
-                RegisterCellCallback(cell);
+                RegisterIndexCellCallback(dataRow);
+                foreach (var cell in dataRow.Cells)
+                {
+                    RegisterCellCallback(cell);
+                }
             }
 
             Table.EmptyRow.AddRowButton.clicked += () =>
@@ -51,6 +54,14 @@ namespace Editor
             }
 
             rootVisualElement.RegisterCallback<MouseUpEvent>(SelectSystem.EndSelecting);
+        }
+
+        private void RegisterIndexCellCallback(DataRow dataRow)
+        {
+            dataRow.IndexCell.RegisterCallback<MouseDownEvent>(evt =>
+            {
+                if (evt.clickCount >= 1) SelectSystem.Select(dataRow.Cells.First(), dataRow.Cells.Last());
+            });
         }
 
         private void RegisterCellCallback(Cell cell)

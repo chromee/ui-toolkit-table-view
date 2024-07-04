@@ -54,6 +54,17 @@ namespace Editor.System
             _selectRangeMarker.IsVisible = false;
         }
 
+        public void Select(Cell st, Cell ed)
+        {
+            EndSelecting(default);
+            StartSelectedCell = st;
+            EndSelectedCell = ed;
+            _selectMarker.Fit(st);
+            _selectRangeMarker.Fit(StartSelectedCell, EndSelectedCell);
+            _selectRangeMarker.IsVisible = true;
+            _selectMarker.IsVisible = true;
+        }
+
         public Cell[][] GetSelectedCells()
         {
             if (StartSelectedCell == null) return null;
