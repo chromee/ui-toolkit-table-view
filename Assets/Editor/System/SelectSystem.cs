@@ -1,4 +1,5 @@
-﻿using Editor.VisualElements;
+﻿using System.Linq;
+using Editor.VisualElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -11,6 +12,8 @@ namespace Editor.System
         public bool IsSelecting { get; private set; }
         public Cell StartSelectedCell { get; private set; }
         public Cell EndSelectedCell { get; private set; }
+        public DataRow StartSelectedRow { get; private set; }
+        public DataRow EndSelectedRow { get; private set; }
 
         private readonly Marker _selectMarker;
         private readonly Marker _selectRangeMarker;
@@ -40,7 +43,33 @@ namespace Editor.System
             _selectRangeMarker.IsVisible = true;
         }
 
-        public void EndSelecting(MouseUpEvent _)
+        public void EndSelecting()
+        {
+            if (!IsSelecting) return;
+            IsSelecting = false;
+        }
+
+        public void StartRowSelecting(DataRow row)
+        {
+            StartSelectedRow = row;
+            _selectMarker.Fit(row.Cells.First());
+            _selectMarker.IsVisible = true;
+            _selectRangeMarker.IsVisible = false;
+            IsSelecting = true;
+        }
+
+        public void RowSelecting(DataRow cell)
+        {
+            if (!IsSelecting || StartSelectedRow == null || cell == null) return;
+
+            EndSelectedRow = cell;
+            var topRow = StartSelectedRow.Index < EndSelectedRow.Index ? StartSelectedRow : EndSelectedRow;
+            var bottomRow = StartSelectedRow.Index < EndSelectedRow.Index ? EndSelectedRow : StartSelectedRow;
+            _selectRangeMarker.Fit(topRow.Cells.First(), bottomRow.Cells.Last());
+            _selectRangeMarker.IsVisible = true;
+        }
+
+        public void EndRowSelecting()
         {
             if (!IsSelecting) return;
             IsSelecting = false;
@@ -50,19 +79,10 @@ namespace Editor.System
         {
             StartSelectedCell = null;
             EndSelectedCell = null;
+            StartSelectedRow = null;
+            EndSelectedRow = null;
             _selectMarker.IsVisible = false;
             _selectRangeMarker.IsVisible = false;
-        }
-
-        public void Select(Cell st, Cell ed)
-        {
-            EndSelecting(default);
-            StartSelectedCell = st;
-            EndSelectedCell = ed;
-            _selectMarker.Fit(st);
-            _selectRangeMarker.Fit(StartSelectedCell, EndSelectedCell);
-            _selectRangeMarker.IsVisible = true;
-            _selectMarker.IsVisible = true;
         }
 
         public Cell[][] GetSelectedCells()

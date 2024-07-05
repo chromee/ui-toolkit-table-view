@@ -15,6 +15,7 @@ namespace Editor
         public readonly CopyPasteSystem CopyPasteSystem;
         public readonly ResizeColSystem ResizeColSystem;
         public readonly SelectSystem SelectSystem;
+        public readonly DeleteSystem DeleteSystem;
         public readonly ShortcutKeySystem ShortcutKeySystem;
 
         public TableManager(VisualElement rootVisualElement, ColInfo[] colInfos, object[][] rowValues = null)
@@ -27,7 +28,8 @@ namespace Editor
             SelectSystem = new SelectSystem(_rootVisualElement, Table);
             CopyPasteSystem = new CopyPasteSystem(_rootVisualElement, SelectSystem, UndoRedoSystem);
             ResizeColSystem = new ResizeColSystem(_rootVisualElement, Table, colInfos, SelectSystem, CopyPasteSystem);
-            ShortcutKeySystem = new ShortcutKeySystem(_rootVisualElement, CopyPasteSystem, UndoRedoSystem, SelectSystem);
+            DeleteSystem = new DeleteSystem(SelectSystem, UndoRedoSystem);
+            ShortcutKeySystem = new ShortcutKeySystem(_rootVisualElement, CopyPasteSystem, UndoRedoSystem, SelectSystem, DeleteSystem);
 
             foreach (var headerCell in Table.HeaderRow.Cells)
             {
@@ -53,15 +55,21 @@ namespace Editor
                 RegisterCellCallback(cell);
             }
 
-            rootVisualElement.RegisterCallback<MouseUpEvent>(SelectSystem.EndSelecting);
+            rootVisualElement.RegisterCallback<MouseUpEvent>(_ =>
+            {
+                SelectSystem.EndSelecting();
+                SelectSystem.EndRowSelecting();
+            });
         }
 
         private void RegisterIndexCellCallback(DataRow dataRow)
         {
             dataRow.IndexCell.RegisterCallback<MouseDownEvent>(evt =>
             {
-                if (evt.clickCount >= 1) SelectSystem.Select(dataRow.Cells.First(), dataRow.Cells.Last());
+                if (evt.clickCount == 1) SelectSystem.StartRowSelecting(dataRow);
             });
+
+            dataRow.IndexCell.RegisterCallback<MouseEnterEvent>(_ => SelectSystem.RowSelecting(dataRow));
         }
 
         private void RegisterCellCallback(Cell cell)

@@ -9,13 +9,15 @@ namespace Editor.System
         private readonly CopyPasteSystem _copyPasteSystem;
         private readonly UndoRedoSystem _undoRedoSystem;
         private readonly SelectSystem _selectSystem;
+        private readonly DeleteSystem _deleteSystem;
 
-        public ShortcutKeySystem(VisualElement rootVisualElement, CopyPasteSystem copyPasteSystem, UndoRedoSystem undoRedoSystem, SelectSystem selectSystem)
+        public ShortcutKeySystem(VisualElement rootVisualElement, CopyPasteSystem copyPasteSystem, UndoRedoSystem undoRedoSystem, SelectSystem selectSystem, DeleteSystem deleteSystem)
         {
             this._rootVisualElement = rootVisualElement;
             _copyPasteSystem = copyPasteSystem;
             _undoRedoSystem = undoRedoSystem;
             _selectSystem = selectSystem;
+            _deleteSystem = deleteSystem;
         }
 
         public void SetupRootVisualElementForKeyboardInput()
@@ -43,6 +45,7 @@ namespace Editor.System
             else if (ev.keyCode == KeyCode.Z && Event.current.control) _undoRedoSystem.Undo(_rootVisualElement);
             else if (ev.keyCode == KeyCode.Y && Event.current.control) _undoRedoSystem.Redo(_rootVisualElement);
             else if (ev.keyCode == KeyCode.Escape) CancelAll();
+            else if (ev.keyCode == KeyCode.Delete) _deleteSystem.DeleteSelected();
             else _selectSystem.StartSelectedCell?.StartEditingByKeyDown(ev);
         }
 
