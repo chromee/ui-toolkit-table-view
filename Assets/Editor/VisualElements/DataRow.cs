@@ -25,16 +25,7 @@ namespace Editor.VisualElements
             for (var i = 0; i < colInfos.Length; i++)
             {
                 var colInfo = colInfos[i];
-
-                var cell = Type.GetTypeCode(colInfo.Type) switch
-                {
-                    TypeCode.String => Cell.Create(Index, i, values?[i], colInfo.Width),
-                    TypeCode.Int32 => Cell.Create(Index, i, values?[i], colInfo.Width),
-                    TypeCode.Single => Cell.Create(Index, i, values?[i], colInfo.Width),
-                    TypeCode.Boolean => Cell.Create(Index, i, values?[i], colInfo.Width),
-                    _ => Cell.Create(Index, i, values?[i], colInfo.Width),
-                };
-
+                var cell = Cell.Create(Index, i, values?[i], colInfo.Width);
                 _cells[i] = cell;
                 Add(cell);
             }

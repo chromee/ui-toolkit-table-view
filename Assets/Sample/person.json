@@ -1,0 +1,22 @@
+﻿{
+  "Persons": [
+    {
+      "Id": 1,
+      "Name": "Alice",
+      "Height": 155,
+      "Gender": "Female"
+    },
+    {
+      "Id": 2,
+      "Name": "Bob",
+      "Height": 175.5,
+      "Gender": "Male"
+    },
+    {
+      "Id": 3,
+      "Name": "Charlie",
+      "Height": 165,
+      "Gender": "Female"
+    }
+  ]
+}

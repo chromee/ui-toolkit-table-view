@@ -22,16 +22,11 @@ namespace Editor.VisualElements
             for (var i = 0; i < colInfos.Length; i++)
             {
                 var colInfo = colInfos[i];
-
-                var cell = Type.GetTypeCode(colInfo.Type) switch
-                {
-                    TypeCode.String => Cell.Create(rowIndex, i, string.Empty, colInfo.Width),
-                    TypeCode.Int32 => Cell.Create(rowIndex, i, 0, colInfo.Width),
-                    TypeCode.Single => Cell.Create(rowIndex, i, 0f, colInfo.Width),
-                    TypeCode.Boolean => Cell.Create(rowIndex, i, false, colInfo.Width),
-                    _ => Cell.Create(0, i, string.Empty, colInfo.Width),
-                };
-
+                var value =
+                    colInfo.Type.IsValueType ? Activator.CreateInstance(colInfo.Type) :
+                    Type.GetTypeCode(colInfo.Type) == TypeCode.String ? string.Empty :
+                    null;
+                var cell = Cell.Create(rowIndex, i, value, colInfo.Width);
                 _cells[i] = cell;
                 Add(cell);
             }

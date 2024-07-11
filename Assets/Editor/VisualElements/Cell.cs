@@ -13,7 +13,7 @@ namespace Editor.VisualElements
         public Vector2 Position => new(Col, Row);
 
         public abstract object Val { get; }
-        public abstract event Action<object, object> OnValueChangedFromEdit;
+        public event Action<object, object> OnValueChangedFromEdit;
 
         public Cell<T> As<T>() => this as Cell<T>;
 
@@ -27,11 +27,12 @@ namespace Editor.VisualElements
         {
             return value switch
             {
-                string sv => new Cell<string>(row, col, sv, width),
-                int iv => new Cell<int>(row, col, iv, width),
-                float fv => new Cell<float>(row, col, fv, width),
-                bool bv => new Cell<bool>(row, col, bv, width),
-                _ => new Cell<string>(row, col, value.ToString(), width),
+                string sv => new StringCell(row, col, sv, width),
+                int iv => new IntCell(row, col, iv, width),
+                float fv => new FloatCell(row, col, fv, width),
+                bool bv => new BoolCell(row, col, bv, width),
+                Enum ev => new EnumCell(row, col, ev, width),
+                _ => new StringCell(row, col, value.ToString(), width),
             };
         }
 
@@ -47,17 +48,13 @@ namespace Editor.VisualElements
         public abstract void StartEditingByKeyDown(KeyDownEvent evt);
         public abstract bool TryPaste(Cell from);
         public abstract void ClearValue();
+
+        protected void OnValueChanged(object prev, object current) => OnValueChangedFromEdit?.Invoke(prev, current);
     }
 
-    public class Cell<T> : Cell
+    public abstract class Cell<T> : Cell
     {
-        private VisualElement _body;
-
-        public override event Action<object, object> OnValueChangedFromEdit;
-
         private T _value;
-
-        private bool _isEditing;
 
         public T Value
         {
@@ -71,23 +68,12 @@ namespace Editor.VisualElements
 
         public override object Val => Value;
 
-        public Cell(int row, int col, T value, float width = 100f) : base(row, col, width)
+        protected Cell(int row, int col, T value, float width = 100f) : base(row, col, width)
         {
             Value = value;
         }
 
-        private void RefreshView()
-        {
-            Clear();
-
-            if (typeof(T) == typeof(string)) _body = new Label { text = Convert.ToString(Value) };
-            else if (typeof(T) == typeof(int)) _body = new Label { text = Convert.ToInt32(Value).ToString() };
-            else if (typeof(T) == typeof(float)) _body = new Label { text = Convert.ToSingle(Value).ToString(CultureInfo.InvariantCulture) };
-            else if (typeof(T) == typeof(bool)) _body = CreateEditingBodyAsBool();
-            else _body = new Label { text = Convert.ToString(Value) };
-
-            Add(_body);
-        }
+        protected abstract void RefreshView();
 
         public override void ClearValue() => Value = default;
 
@@ -98,88 +84,91 @@ namespace Editor.VisualElements
             Value = v;
             return true;
         }
+    }
 
-        #region create body
+    public class StringCell : Cell<string>
+    {
+        private VisualElement _body;
+        private bool _isEditing;
 
-        private VisualElement CreateEditingBodyAsBool()
-        {
-            // Bool は常時 Toggle
-            var toggle = new Toggle { text = string.Empty, value = Convert.ToBoolean(Value) };
-            toggle.RegisterValueChangedCallback(evt =>
-            {
-                var prev = Value;
-                Value = (T)(object)evt.newValue;
-                OnValueChangedFromEdit?.Invoke(prev, Value);
-            });
-
-            return toggle;
-        }
-
-        #endregion
-
-        #region editing
+        public StringCell(int row, int col, string value, float width = 100) : base(row, col, value, width) { }
 
         public override void StartEditing()
         {
-            if (typeof(T) == typeof(string)) StartEditingAsString();
-            else if (typeof(T) == typeof(int)) StartEditingAsInt();
-            else if (typeof(T) == typeof(float)) StartEditingAsFloat();
-            // else if (typeof(T) == typeof(bool)) StartEditingAsBool(); // Bool は常時 Toggle なので切り替え不要
+            StartEditing(Value);
         }
 
         public override void StartEditingByKeyDown(KeyDownEvent evt)
         {
             if (_isEditing) return;
 
-            if (evt.keyCode == KeyCode.F2) StartEditing();
-            if (typeof(T) == typeof(string))
-            {
-                var str = evt.keyCode.KeyCodeToString(Event.current.shift);
-                if (!string.IsNullOrEmpty(str)) this.ExecAfter1Frame(() => StartEditingAsString(str));
-            }
-            else if (typeof(T) == typeof(int) && evt.keyCode.IsNumericKey())
-            {
-                var num = evt.keyCode.GetNumericValue();
-                this.ExecAfter1Frame(() => StartEditingAsInt(num));
-            }
-            else if (typeof(T) == typeof(float) && evt.keyCode.IsNumericKey())
-            {
-                var num = evt.keyCode.GetNumericValue();
-                this.ExecAfter1Frame(() => StartEditingAsFloat(num));
-            }
+            var str = evt.keyCode.KeyCodeToString(Event.current.shift);
+            if (!string.IsNullOrEmpty(str)) this.ExecAfter1Frame(() => StartEditing(str));
         }
 
-        private void StartEditingAsString(string value = null)
+        protected override void RefreshView()
+        {
+            Clear();
+            _body = new Label { text = Convert.ToString(Value) };
+            Add(_body);
+        }
+
+        private void StartEditing(string value)
         {
             _isEditing = true;
 
-            var textField = new TextField { value = !string.IsNullOrEmpty(value) ? value : Convert.ToString(Value), };
+            _body.RemoveFromHierarchy();
+
+            var textField = new TextField { value = value, };
             textField.style.width = Width;
             AddToClassList("input-cell");
-
-            _body.RemoveFromHierarchy();
-            Add(textField);
 
             textField.RegisterCallback<FocusInEvent>(_ => this.ExecAfter1Frame(() => textField.SelectRange(textField.text.Length, textField.text.Length)));
             textField.RegisterCallback<FocusOutEvent>(_ =>
             {
                 var prev = Value;
-                Value = (T)(object)textField.value;
-                OnValueChangedFromEdit?.Invoke(prev, Value);
+                Value = textField.value;
+                OnValueChanged(prev, Value);
                 textField.RemoveFromHierarchy();
                 RemoveFromClassList("input-cell");
                 Add(_body);
                 _isEditing = false;
             });
 
+            Add(textField);
             textField.Focus();
         }
+    }
 
-        private void StartEditingAsInt(int value = int.MinValue)
+    public class IntCell : Cell<int>
+    {
+        private VisualElement _body;
+        private bool _isEditing;
+
+        public IntCell(int row, int col, int value, float width = 100) : base(row, col, value, width) { }
+
+        public override void StartEditing() => StartEditing(Value);
+
+        public override void StartEditingByKeyDown(KeyDownEvent evt)
+        {
+            if (_isEditing) return;
+
+            var num = evt.keyCode.GetNumericValue();
+            this.ExecAfter1Frame(() => StartEditing(num));
+        }
+
+        protected override void RefreshView()
+        {
+            Clear();
+            _body = new Label { text = Value.ToString() };
+            Add(_body);
+        }
+
+        private void StartEditing(int value)
         {
             _isEditing = true;
 
-            var integerField = new IntegerField { value = value != int.MinValue ? value : Convert.ToInt32(Value), };
+            var integerField = new IntegerField { value = value, };
             integerField.style.width = Width;
             AddToClassList("input-cell");
 
@@ -190,8 +179,8 @@ namespace Editor.VisualElements
             integerField.RegisterCallback<FocusOutEvent>(_ =>
             {
                 var prev = Value;
-                Value = (T)(object)integerField.value;
-                OnValueChangedFromEdit?.Invoke(prev, Value);
+                Value = integerField.value;
+                OnValueChanged(prev, Value);
                 integerField.RemoveFromHierarchy();
                 RemoveFromClassList("input-cell");
                 Add(_body);
@@ -199,13 +188,37 @@ namespace Editor.VisualElements
             });
             integerField.Focus();
         }
+    }
 
-        private void StartEditingAsFloat(float value = float.MinValue)
+    public class FloatCell : Cell<float>
+    {
+        private VisualElement _body;
+        private bool _isEditing;
+
+        public FloatCell(int row, int col, float value, float width = 100) : base(row, col, value, width) { }
+
+        public override void StartEditing() => StartEditing(Value);
+
+        public override void StartEditingByKeyDown(KeyDownEvent evt)
+        {
+            if (_isEditing) return;
+
+            var num = evt.keyCode.GetNumericValue();
+            this.ExecAfter1Frame(() => StartEditing(num));
+        }
+
+        protected override void RefreshView()
+        {
+            Clear();
+            _body = new Label { text = Value.ToString(CultureInfo.InvariantCulture) };
+            Add(_body);
+        }
+
+        private void StartEditing(float value)
         {
             _isEditing = true;
 
-            // く、苦しい～～～！ｗ（float.MinValue + 1
-            var floatField = new FloatField { value = value > float.MinValue + 1 ? value : Convert.ToSingle(Value), };
+            var floatField = new FloatField { value = value, };
             floatField.style.width = Width;
             AddToClassList("input-cell");
 
@@ -216,8 +229,8 @@ namespace Editor.VisualElements
             floatField.RegisterCallback<FocusOutEvent>(_ =>
             {
                 var prev = Value;
-                Value = (T)(object)floatField.value;
-                OnValueChangedFromEdit?.Invoke(prev, Value);
+                Value = floatField.value;
+                OnValueChanged(prev, Value);
                 floatField.RemoveFromHierarchy();
                 RemoveFromClassList("input-cell");
                 Add(_body);
@@ -226,7 +239,46 @@ namespace Editor.VisualElements
 
             floatField.Focus();
         }
+    }
 
-        #endregion
+    public class BoolCell : Cell<bool>
+    {
+        public BoolCell(int row, int col, bool value, float width = 100) : base(row, col, value, width)
+        {
+            var toggle = new Toggle { text = string.Empty, value = Value };
+            toggle.RegisterValueChangedCallback(evt =>
+            {
+                var prev = Value;
+                Value = evt.newValue;
+                OnValueChanged(prev, Value);
+            });
+            Add(toggle);
+        }
+
+        public override void StartEditing() { }
+        public override void StartEditingByKeyDown(KeyDownEvent evt) { }
+        protected override void RefreshView() { }
+    }
+
+    public class EnumCell : Cell<Enum>
+    {
+        public EnumCell(int row, int col, Enum value, float width = 100) : base(row, col, value, width)
+        {
+            AddToClassList("input-cell");
+
+            var enumField = new EnumField();
+            enumField.Init(Value);
+            enumField.RegisterValueChangedCallback(evt =>
+            {
+                var prev = Value;
+                Value = evt.newValue;
+                OnValueChanged(prev, Value);
+            });
+            Add(enumField);
+        }
+
+        public override void StartEditing() { }
+        public override void StartEditingByKeyDown(KeyDownEvent evt) { }
+        protected override void RefreshView() { }
     }
 }

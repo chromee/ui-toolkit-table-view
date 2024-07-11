@@ -6,25 +6,32 @@
                 <ui:Label tabindex="-1" parse-escape-sequences="true" display-tooltip-when-elided="true" />
             </ui:VisualElement>
             <ui:VisualElement name="header-cell" class="cell header-cell" style="width: 100px;">
-                <ui:Label tabindex="-1" text="header" parse-escape-sequences="true" display-tooltip-when-elided="true" class="header-label" />
+                <ui:Label tabindex="-1" text="bool header" parse-escape-sequences="true" display-tooltip-when-elided="true" class="header-label" />
                 <ui:VisualElement name="resizer" class="resizer" style="flex-grow: 1;" />
             </ui:VisualElement>
             <ui:VisualElement name="header-cell" class="cell header-cell" style="width: 100px;">
-                <ui:Label tabindex="-1" text="header" parse-escape-sequences="true" display-tooltip-when-elided="true" class="header-label" />
+                <ui:Label tabindex="-1" text="string header" parse-escape-sequences="true" display-tooltip-when-elided="true" class="header-label" />
                 <ui:VisualElement name="resizer" class="resizer" style="flex-grow: 1;" />
             </ui:VisualElement>
             <ui:VisualElement name="header-cell" class="cell header-cell" style="width: 100px;">
-                <ui:Label tabindex="-1" text="header" parse-escape-sequences="true" display-tooltip-when-elided="true" class="header-label" />
+                <ui:Label tabindex="-1" text="int header" parse-escape-sequences="true" display-tooltip-when-elided="true" class="header-label" />
                 <ui:VisualElement name="resizer" class="resizer" style="flex-grow: 1;" />
             </ui:VisualElement>
             <ui:VisualElement name="header-cell" class="cell header-cell" style="width: 100px;">
-                <ui:Label tabindex="-1" text="header" parse-escape-sequences="true" display-tooltip-when-elided="true" class="header-label" />
+                <ui:Label tabindex="-1" text="float header" parse-escape-sequences="true" display-tooltip-when-elided="true" class="header-label" />
+                <ui:VisualElement name="resizer" class="resizer" style="flex-grow: 1;" />
+            </ui:VisualElement>
+            <ui:VisualElement name="header-cell" class="cell header-cell" style="width: 100px;">
+                <ui:Label tabindex="-1" text="enum header" parse-escape-sequences="true" display-tooltip-when-elided="true" class="header-label" />
                 <ui:VisualElement name="resizer" class="resizer" style="flex-grow: 1;" />
             </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="row" class="row">
             <ui:VisualElement name="index-cell" class="cell index-cell">
                 <ui:Label tabindex="-1" text="10" parse-escape-sequences="true" display-tooltip-when-elided="true" />
+            </ui:VisualElement>
+            <ui:VisualElement name="cell" class="cell" style="width: 100px;">
+                <ui:Label tabindex="-1" text="cell" parse-escape-sequences="true" display-tooltip-when-elided="true" />
             </ui:VisualElement>
             <ui:VisualElement name="cell" class="cell" style="width: 100px;">
                 <ui:Label tabindex="-1" text="cell" parse-escape-sequences="true" display-tooltip-when-elided="true" />
@@ -55,9 +62,13 @@
             <ui:VisualElement name="input-cell" class="cell input-cell" style="width: 100px;">
                 <ui:FloatField value="42.2" />
             </ui:VisualElement>
+            <ui:VisualElement name="input-cell" class="cell input-cell" style="width: 100px;">
+                <ui:EnumField type="Editor.Sample.Gender, Assembly-CSharp-Editor" value="Male" />
+            </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="empty-row" class="row">
             <ui:Button text="+" parse-escape-sequences="true" display-tooltip-when-elided="true" name="add-row-button" class="add-row-button" />
+            <ui:VisualElement name="empty-cell" class="cell" style="width: 100px;" />
             <ui:VisualElement name="empty-cell" class="cell" style="width: 100px;" />
             <ui:VisualElement name="empty-cell" class="cell" style="width: 100px;" />
             <ui:VisualElement name="empty-cell" class="cell" style="width: 100px;" />

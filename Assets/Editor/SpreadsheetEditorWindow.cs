@@ -1,4 +1,6 @@
-﻿using Editor.VisualElements;
+﻿using System.Collections.Generic;
+using Editor.Sample;
+using Editor.VisualElements;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -22,25 +24,23 @@ namespace Editor
             var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>("Assets/Editor/SpreadsheetEditor.uss");
             rootVisualElement.styleSheets.Add(styleSheet);
 
-            var tableInfo = new[]
-            {
-                new ColInfo(typeof(string), "String Value", 100f),
-                new ColInfo(typeof(int), "Int Value", 100f),
-                new ColInfo(typeof(float), "Float Value", 100f),
-                new ColInfo(typeof(bool), "✓", 30f),
-                new ColInfo(typeof(string), "String Value 2", 200f),
-            };
+            var db = new PersonDatabase();
+            var conInfos = new List<ColInfo>();
+            foreach (var c in db.Columns) conInfos.Add(c.ToColInfo());
 
-            var values = new[]
+            var values = new List<object[]>();
+            foreach (var p in db.Persons)
             {
-                new object[] { "A", 1, 1.1f, true, "Z" },
-                new object[] { "B", 2, 2.2f, false, "Y" },
-                new object[] { "C", 3, 3.3f, true, "X" },
-                new object[] { "D", 4, 4.4f, false, "W" },
-                new object[] { "E", 5, 5.5f, true, "V" },
-            };
+                values.Add(new object[]
+                {
+                    p.Id,
+                    p.Name,
+                    p.Height,
+                    p.Gender,
+                });
+            }
 
-            _tableManager = new TableManager(rootVisualElement, tableInfo, values);
+            _tableManager = new TableManager(rootVisualElement, conInfos.ToArray(), values.ToArray());
             _tableManager.ShortcutKeySystem.SetupRootVisualElementForKeyboardInput();
             _tableManager.ShortcutKeySystem.RegisterShortcuts();
         }

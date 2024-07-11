@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
+using Editor.Sample;
 using Editor.System;
 using Editor.Utilities;
 using Editor.VisualElements;
@@ -50,6 +52,7 @@ namespace Editor
                 var dataRow = Table.AddDataRow(colInfos, Table.EmptyRow.Cells.Select(cell => cell.Val).ToArray());
                 foreach (var cell in dataRow.Cells) RegisterCellCallback(cell);
             };
+
             foreach (var cell in Table.EmptyRow.Cells)
             {
                 RegisterCellCallback(cell);
