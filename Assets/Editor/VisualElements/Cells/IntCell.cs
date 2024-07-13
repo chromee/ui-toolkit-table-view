@@ -1,0 +1,55 @@
+﻿using Editor.Utilities;
+using UnityEngine.UIElements;
+
+namespace Editor.VisualElements.Cells
+{
+    public class IntCell : Cell<int>
+    {
+        private VisualElement _body;
+        private bool _isEditing;
+
+        public IntCell(int row, int col, int value, float width = 100) : base(row, col, value, width) { }
+
+        public override void StartEditing() => StartEditing(Value);
+
+        public override void StartEditingByKeyDown(KeyDownEvent evt)
+        {
+            if (_isEditing) return;
+
+            var num = evt.keyCode.GetNumericValue();
+            this.ExecAfter1Frame(() => StartEditing(num));
+        }
+
+        protected override void RefreshView()
+        {
+            Clear();
+            _body = new Label { text = Value.ToString() };
+            Add(_body);
+        }
+
+        private void StartEditing(int value)
+        {
+            _isEditing = true;
+
+            var integerField = new IntegerField { value = value, };
+            integerField.style.width = Width;
+            AddToClassList("input-cell");
+
+            _body.RemoveFromHierarchy();
+            Add(integerField);
+
+            integerField.RegisterCallback<FocusInEvent>(_ => this.ExecAfter1Frame(() => integerField.SelectRange(integerField.text.Length, integerField.text.Length)));
+            integerField.RegisterCallback<FocusOutEvent>(_ =>
+            {
+                var prev = Value;
+                Value = integerField.value;
+                OnValueChanged(prev, Value);
+                integerField.RemoveFromHierarchy();
+                RemoveFromClassList("input-cell");
+                Add(_body);
+                _isEditing = false;
+            });
+            integerField.Focus();
+        }
+    }
+}

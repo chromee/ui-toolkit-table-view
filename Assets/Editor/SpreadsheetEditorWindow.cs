@@ -21,7 +21,11 @@ namespace Editor
         public void CreateGUI()
         {
             // Load USS
-            var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>("Assets/Editor/SpreadsheetEditor.uss");
+            var doc = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/Editor/UI/SpreadsheetWindow.uxml");
+            var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>("Assets/Editor/UI/SpreadsheetEditor.uss");
+
+            var window = doc.CloneTree();
+            rootVisualElement.Add(window);
             rootVisualElement.styleSheets.Add(styleSheet);
 
             var db = new PersonDatabase();
@@ -40,7 +44,7 @@ namespace Editor
                 });
             }
 
-            _tableManager = new TableManager(rootVisualElement, conInfos.ToArray(), values.ToArray());
+            _tableManager = new TableManager(rootVisualElement, window.Q<ScrollView>("body"), conInfos.ToArray(), values.ToArray());
             _tableManager.ShortcutKeySystem.SetupRootVisualElementForKeyboardInput();
             _tableManager.ShortcutKeySystem.RegisterShortcuts();
         }

@@ -20,11 +20,11 @@ namespace Editor
         public readonly DeleteSystem DeleteSystem;
         public readonly ShortcutKeySystem ShortcutKeySystem;
 
-        public TableManager(VisualElement rootVisualElement, ColInfo[] colInfos, object[][] rowValues = null)
+        public TableManager(VisualElement rootVisualElement, ScrollView body, ColInfo[] colInfos, object[][] rowValues = null)
         {
             _rootVisualElement = rootVisualElement;
             Table = new Table(colInfos, rowValues);
-            _rootVisualElement.Add(Table);
+            body.Add(Table);
 
             UndoRedoSystem = new UndoRedoSystem();
             SelectSystem = new SelectSystem(_rootVisualElement, Table);
