@@ -11,7 +11,7 @@ namespace Editor.VisualElements
         private readonly Cell[] _cells;
         public IReadOnlyList<Cell> Cells => _cells;
 
-        public EmptyRow(int rowIndex, ColumnMetadata[] colInfos)
+        public EmptyRow(int rowIndex, ColumnMetadata[] metadata)
         {
             AddToClassList("row");
 
@@ -19,15 +19,15 @@ namespace Editor.VisualElements
             AddRowButton.AddToClassList("add-row-button");
             Add(AddRowButton);
 
-            _cells = new Cell[colInfos.Length];
-            for (var i = 0; i < colInfos.Length; i++)
+            _cells = new Cell[metadata.Length];
+            for (var i = 0; i < metadata.Length; i++)
             {
-                var colInfo = colInfos[i];
+                var md = metadata[i];
                 var value =
-                    colInfo.Type.IsValueType ? Activator.CreateInstance(colInfo.Type) :
-                    Type.GetTypeCode(colInfo.Type) == TypeCode.String ? string.Empty :
+                    md.Type.IsValueType ? Activator.CreateInstance(md.Type) :
+                    Type.GetTypeCode(md.Type) == TypeCode.String ? string.Empty :
                     null;
-                var cell = Cell.Create(rowIndex, i, value, colInfo.Width);
+                var cell = Cell.Create(rowIndex, i, value, md, null);
                 _cells[i] = cell;
                 Add(cell);
             }

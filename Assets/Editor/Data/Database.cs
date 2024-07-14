@@ -11,7 +11,7 @@ namespace Editor.Data
         [SerializeField] private ColumnMetadata[] _columns;
         public ColumnMetadata[] Columns => _columns;
 
-        public abstract object[][] GetValues();
+        public abstract object[][] GetData();
 
         protected abstract Type GetDataType();
 

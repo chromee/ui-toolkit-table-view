@@ -18,7 +18,7 @@ MonoBehaviour:
     Width: 100
   - Name: Name
     TypeName: string
-    Width: 100
+    Width: 225
   - Name: Height
     TypeName: float
     Width: 100
@@ -40,7 +40,7 @@ MonoBehaviour:
     Height: 150
     Gender: 1
     IsMarried: 0
-  - Id: 2
+  - Id: 3
     Name: Hanaco
     Height: 150
     Gender: 1

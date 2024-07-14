@@ -9,7 +9,7 @@ namespace Sample.Editor
     [CreateAssetMenu(fileName = nameof(PersonDatabase), menuName = "Databases/" + nameof(PersonDatabase), order = 0)]
     public class PersonDatabase : Database<Person>
     {
-        public override object[][] GetValues()
+        public override object[][] GetData()
         {
             return Data.Select(v => new object[]
                 {

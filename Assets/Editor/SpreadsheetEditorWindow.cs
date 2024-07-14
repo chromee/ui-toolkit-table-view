@@ -26,7 +26,8 @@ namespace Editor
                     existingWindow.Focus();
                     return;
                 }
-                else if (existingWindow._database == null)
+
+                if (existingWindow._database == null)
                 {
                     existingWindow.Close();
                 }
@@ -56,7 +57,7 @@ namespace Editor
             rootVisualElement.styleSheets.Add(styleSheet);
             rootVisualElement.Add(uxml);
 
-            window._tableManager = new TableManager(rootVisualElement, uxml.Q<ScrollView>("body"), database.Columns, database.GetValues());
+            window._tableManager = new TableManager(database, rootVisualElement);
             window._tableManager.ShortcutKeySystem.SetupRootVisualElementForKeyboardInput();
             window._tableManager.ShortcutKeySystem.RegisterShortcuts();
         }

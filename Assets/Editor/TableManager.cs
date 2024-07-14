@@ -9,8 +9,7 @@ namespace Editor
 {
     public class TableManager
     {
-        private readonly VisualElement _rootVisualElement;
-
+        public readonly Database Database;
         public readonly Table Table;
         public readonly UndoRedoSystem UndoRedoSystem;
         public readonly CopyPasteSystem CopyPasteSystem;
@@ -19,16 +18,21 @@ namespace Editor
         public readonly DeleteSystem DeleteSystem;
         public readonly ShortcutKeySystem ShortcutKeySystem;
 
-        public TableManager(VisualElement rootVisualElement, ScrollView body, ColumnMetadata[] colInfos, object[][] rowValues = null)
+        private readonly VisualElement _rootVisualElement;
+
+        public TableManager(Database database, VisualElement rootVisualElement)
         {
+            Database = database;
+            Table = new Table(database);
             _rootVisualElement = rootVisualElement;
-            Table = new Table(colInfos, rowValues);
+
+            var body = rootVisualElement.Q<ScrollView>("table-body");
             body.Add(Table);
 
             UndoRedoSystem = new UndoRedoSystem();
             SelectSystem = new SelectSystem(_rootVisualElement, Table);
             CopyPasteSystem = new CopyPasteSystem(_rootVisualElement, SelectSystem, UndoRedoSystem);
-            ResizeColSystem = new ResizeColSystem(_rootVisualElement, body, Table, colInfos, SelectSystem, CopyPasteSystem);
+            ResizeColSystem = new ResizeColSystem(database, _rootVisualElement, body, Table, SelectSystem, CopyPasteSystem);
             DeleteSystem = new DeleteSystem(SelectSystem, UndoRedoSystem);
             ShortcutKeySystem = new ShortcutKeySystem(_rootVisualElement, CopyPasteSystem, UndoRedoSystem, SelectSystem, DeleteSystem);
 
@@ -48,7 +52,7 @@ namespace Editor
 
             Table.EmptyRow.AddRowButton.clicked += () =>
             {
-                var dataRow = Table.AddDataRow(colInfos, Table.EmptyRow.Cells.Select(cell => cell.Val).ToArray());
+                var dataRow = Table.AddDataRow(Table.EmptyRow.Cells.Select(cell => cell.Val).ToArray());
                 foreach (var cell in dataRow.Cells) RegisterCellCallback(cell);
             };
 

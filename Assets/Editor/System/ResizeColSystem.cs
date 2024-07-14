@@ -9,10 +9,10 @@ namespace Editor.System
 {
     public class ResizeColSystem
     {
+        private readonly Database _database;
         private readonly VisualElement _rootVisualElement;
         private readonly ScrollView _body;
         private readonly Table _table;
-        private readonly ColumnMetadata[] _colInfos;
         private readonly SelectSystem _selectSystem;
         private readonly CopyPasteSystem _copyPasteSystem;
 
@@ -21,12 +21,12 @@ namespace Editor.System
         private Vector2 _initialMousePosition;
         private float _initialColumnWidth;
 
-        public ResizeColSystem(VisualElement rootVisualElement, ScrollView body, Table table, ColumnMetadata[] colInfos, SelectSystem selectSystem, CopyPasteSystem copyPasteSystem)
+        public ResizeColSystem(Database database, VisualElement rootVisualElement, ScrollView body, Table table, SelectSystem selectSystem, CopyPasteSystem copyPasteSystem)
         {
+            _database = database;
             _rootVisualElement = rootVisualElement;
             _body = body;
             _table = table;
-            _colInfos = colInfos;
             _selectSystem = selectSystem;
             _copyPasteSystem = copyPasteSystem;
         }
@@ -36,7 +36,7 @@ namespace Editor.System
             _isResizing = true;
             _resizingColumnIndex = columnIndex;
             _initialMousePosition = evt.mousePosition;
-            _initialColumnWidth = _colInfos[columnIndex].Width;
+            _initialColumnWidth = _database.Columns[columnIndex].Width;
             _rootVisualElement.RegisterCallback<MouseMoveEvent>(Resizing);
             _rootVisualElement.RegisterCallback<MouseUpEvent>(StopResizing);
         }
@@ -47,7 +47,7 @@ namespace Editor.System
 
             var delta = evt.mousePosition.x - _initialMousePosition.x;
             var width = Mathf.Max(50, _initialColumnWidth + delta);
-            _colInfos[_resizingColumnIndex].Width = width;
+            _database.Columns[_resizingColumnIndex].Width = width;
             _table.HeaderRow.Cells[_resizingColumnIndex].style.width = width;
             _table.EmptyRow.Cells[_resizingColumnIndex].Width = width;
 

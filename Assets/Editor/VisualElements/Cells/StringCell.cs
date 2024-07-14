@@ -1,5 +1,8 @@
 ﻿using System;
+using Editor.Data;
 using Editor.Utilities;
+using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -10,7 +13,7 @@ namespace Editor.VisualElements.Cells
         private VisualElement _body;
         private bool _isEditing;
 
-        public StringCell(int row, int col, string value, float width = 100) : base(row, col, value, width) { }
+        public StringCell(int row, int col, string value, ColumnMetadata metadata, SerializedProperty dataProperty) : base(row, col, value, metadata, dataProperty) { }
 
         public override void StartEditing()
         {
@@ -39,10 +42,14 @@ namespace Editor.VisualElements.Cells
             _body.RemoveFromHierarchy();
 
             var textField = new TextField { value = value, };
-            textField.style.width = Width;
+            if (DataProperty != null) textField.BindProperty(DataProperty.FindPropertyRelative(Metadata.Name));
             AddToClassList("input-cell");
 
-            textField.RegisterCallback<FocusInEvent>(_ => this.ExecAfter1Frame(() => textField.SelectRange(textField.text.Length, textField.text.Length)));
+            textField.RegisterCallback<FocusInEvent>(_ =>
+            {
+                this.ExecAfter1Frame(() => textField.SelectRange(textField.text.Length, textField.text.Length));
+            });
+
             textField.RegisterCallback<FocusOutEvent>(_ =>
             {
                 var prev = Value;

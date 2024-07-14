@@ -1,0 +1,31 @@
+﻿using System;
+using Editor.Data;
+using UnityEditor;
+using UnityEditor.UIElements;
+using UnityEngine.UIElements;
+
+namespace Editor.VisualElements.Cells
+{
+    public class EnumCell : Cell<Enum>
+    {
+        public EnumCell(int row, int col, Enum value, ColumnMetadata metadata, SerializedProperty dataProperty) : base(row, col, value, metadata, dataProperty)
+        {
+            AddToClassList("input-cell");
+
+            var enumField = new EnumField();
+            enumField.Init(Value);
+            enumField.RegisterValueChangedCallback(evt =>
+            {
+                var prev = Value;
+                Value = evt.newValue;
+                OnValueChanged(prev, Value);
+            });
+            if (DataProperty != null) enumField.BindProperty(DataProperty.FindPropertyRelative(metadata.Name));
+            Add(enumField);
+        }
+
+        public override void StartEditing() { }
+        public override void StartEditingByKeyDown(KeyDownEvent evt) { }
+        protected override void RefreshView() { }
+    }
+}

@@ -1,5 +1,7 @@
 ﻿using System;
+using Editor.Data;
 using Editor.VisualElements.Cells;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -7,6 +9,9 @@ namespace Editor.VisualElements
 {
     public abstract class Cell : VisualElement
     {
+        protected readonly ColumnMetadata Metadata;
+        protected readonly SerializedProperty DataProperty;
+
         public int Row;
         public int Col;
         public Vector2 Position => new(Col, Row);
@@ -22,25 +27,28 @@ namespace Editor.VisualElements
             set => style.width = value;
         }
 
-        public static Cell Create<T>(int row, int col, T value, float width = 100f)
+        public static Cell Create<T>(int row, int col, T value, ColumnMetadata metadata, SerializedProperty dataProperty)
         {
             return value switch
             {
-                string sv => new StringCell(row, col, sv, width),
-                int iv => new IntCell(row, col, iv, width),
-                float fv => new FloatCell(row, col, fv, width),
-                bool bv => new BoolCell(row, col, bv, width),
-                Enum ev => new EnumCell(row, col, ev, width),
-                _ => new StringCell(row, col, value.ToString(), width),
+                string sv => new StringCell(row, col, sv, metadata, dataProperty),
+                int iv => new IntCell(row, col, iv, metadata, dataProperty),
+                float fv => new FloatCell(row, col, fv, metadata, dataProperty),
+                bool bv => new BoolCell(row, col, bv, metadata, dataProperty),
+                Enum ev => new EnumCell(row, col, ev, metadata, dataProperty),
+                _ => new StringCell(row, col, value.ToString(), metadata, dataProperty),
             };
         }
 
-        protected Cell(int row, int col, float width = 100f)
+        protected Cell(int row, int col, ColumnMetadata metadata, SerializedProperty dataProperty)
         {
-            AddToClassList("cell");
             Row = row;
             Col = col;
-            Width = width;
+            Metadata = metadata;
+            DataProperty = dataProperty;
+            Width = metadata.Width;
+
+            AddToClassList("cell");
         }
 
         public abstract void StartEditing();
@@ -67,7 +75,7 @@ namespace Editor.VisualElements
 
         public override object Val => Value;
 
-        protected Cell(int row, int col, T value, float width = 100f) : base(row, col, width)
+        protected Cell(int row, int col, T value, ColumnMetadata metadata, SerializedProperty dataProperty) : base(row, col, metadata, dataProperty)
         {
             Value = value;
         }

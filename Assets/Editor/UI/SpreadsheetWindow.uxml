@@ -4,5 +4,5 @@
         <uie:ToolbarMenu tabindex="-1" parse-escape-sequences="true" display-tooltip-when-elided="true" text="Tables" name="TableMenu" />
         <uie:ToolbarButton text="Save" parse-escape-sequences="true" display-tooltip-when-elided="true" />
     </uie:Toolbar>
-    <ui:ScrollView name="body" style="flex-grow: 1; padding-right: 20px;" />
+    <ui:ScrollView name="table-body" style="flex-grow: 1; padding-right: 20px;" />
 </ui:UXML>
