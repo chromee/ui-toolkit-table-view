@@ -1,6 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Editor.Sample;
+﻿using System.Linq;
+using Editor.Data;
 using Editor.System;
 using Editor.Utilities;
 using Editor.VisualElements;
@@ -20,7 +19,7 @@ namespace Editor
         public readonly DeleteSystem DeleteSystem;
         public readonly ShortcutKeySystem ShortcutKeySystem;
 
-        public TableManager(VisualElement rootVisualElement, ScrollView body, ColInfo[] colInfos, object[][] rowValues = null)
+        public TableManager(VisualElement rootVisualElement, ScrollView body, ColumnMetadata[] colInfos, object[][] rowValues = null)
         {
             _rootVisualElement = rootVisualElement;
             Table = new Table(colInfos, rowValues);
@@ -29,7 +28,7 @@ namespace Editor
             UndoRedoSystem = new UndoRedoSystem();
             SelectSystem = new SelectSystem(_rootVisualElement, Table);
             CopyPasteSystem = new CopyPasteSystem(_rootVisualElement, SelectSystem, UndoRedoSystem);
-            ResizeColSystem = new ResizeColSystem(_rootVisualElement, Table, colInfos, SelectSystem, CopyPasteSystem);
+            ResizeColSystem = new ResizeColSystem(_rootVisualElement, body, Table, colInfos, SelectSystem, CopyPasteSystem);
             DeleteSystem = new DeleteSystem(SelectSystem, UndoRedoSystem);
             ShortcutKeySystem = new ShortcutKeySystem(_rootVisualElement, CopyPasteSystem, UndoRedoSystem, SelectSystem, DeleteSystem);
 

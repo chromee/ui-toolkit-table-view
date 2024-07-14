@@ -1,5 +1,5 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
-    <Style src="project://database/Assets/Editor/SpreadsheetEditor.uss?fileID=7433441132597879392&amp;guid=a6b8a1926b674ae6985aea2e420c4d0a&amp;type=3#SpreadsheetEditor" />
+    <Style src="project://database/Assets/Editor/UI/SpreadsheetStyle.uss?fileID=7433441132597879392&amp;guid=a6b8a1926b674ae6985aea2e420c4d0a&amp;type=3#SpreadsheetEditor" />
     <ui:VisualElement name="table" class="table">
         <ui:VisualElement name="header" class="row">
             <ui:VisualElement name="top-index-cell" class="cell index-cell top-index-cell">
@@ -63,7 +63,7 @@
                 <ui:FloatField value="42.2" />
             </ui:VisualElement>
             <ui:VisualElement name="input-cell" class="cell input-cell" style="width: 100px;">
-                <ui:EnumField type="Editor.Sample.Gender, Assembly-CSharp-Editor" value="Male" />
+                <ui:EnumField type="Sample.Scripts.Gender, Assembly-CSharp" />
             </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="empty-row" class="row">

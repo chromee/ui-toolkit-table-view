@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using Editor.Sample;
-using Editor.VisualElements;
+﻿using Editor.Data;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -9,48 +7,63 @@ namespace Editor
 {
     public class SpreadsheetEditorWindow : EditorWindow
     {
-        [MenuItem("Window/Spreadsheet Editor")]
-        public static void ShowExample()
-        {
-            var wnd = GetWindow<SpreadsheetEditorWindow>();
-            wnd.titleContent = new GUIContent("Spreadsheet Editor");
-        }
-
+        private Database _database;
         private TableManager _tableManager;
 
-        public void CreateGUI()
+        private const string UxmlGuid = "f553fca5bf120624a864195eeeb2d85a";
+        private const string StyleSheetGuid = "a6b8a1926b674ae6985aea2e420c4d0a";
+        private static string UxmlPath => AssetDatabase.GUIDToAssetPath(UxmlGuid);
+        private static string StyleSheetPath => AssetDatabase.GUIDToAssetPath(StyleSheetGuid);
+
+        public static void Open(Database database)
         {
-            // Load USS
-            var doc = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/Editor/UI/SpreadsheetWindow.uxml");
-            var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>("Assets/Editor/UI/SpreadsheetEditor.uss");
-
-            var window = doc.CloneTree();
-            rootVisualElement.Add(window);
-            rootVisualElement.styleSheets.Add(styleSheet);
-
-            var db = new PersonDatabase();
-            var conInfos = new List<ColInfo>();
-            foreach (var c in db.Columns) conInfos.Add(c.ToColInfo());
-
-            var values = new List<object[]>();
-            foreach (var p in db.Persons)
+            if (HasOpenInstances<SpreadsheetEditorWindow>())
             {
-                values.Add(new object[]
+                var existingWindow = GetWindow<SpreadsheetEditorWindow>();
+                if (existingWindow._database == database)
                 {
-                    p.Id,
-                    p.Name,
-                    p.Height,
-                    p.Gender,
-                });
+                    SetupWindow(existingWindow);
+                    existingWindow.Focus();
+                    return;
+                }
+                else if (existingWindow._database == null)
+                {
+                    existingWindow.Close();
+                }
             }
 
-            _tableManager = new TableManager(rootVisualElement, window.Q<ScrollView>("body"), conInfos.ToArray(), values.ToArray());
-            _tableManager.ShortcutKeySystem.SetupRootVisualElementForKeyboardInput();
-            _tableManager.ShortcutKeySystem.RegisterShortcuts();
+            var window = CreateInstance<SpreadsheetEditorWindow>();
+            window._database = database;
+            SetupWindow(window);
+            window.Show();
+        }
+
+        private static void SetupWindow(SpreadsheetEditorWindow window)
+        {
+            var database = window._database;
+            if (database == null) return;
+
+            window.titleContent = new GUIContent(database.name);
+
+            var doc = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UxmlPath);
+            var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(StyleSheetPath);
+
+            var rootVisualElement = window.rootVisualElement;
+            var uxml = doc.CloneTree();
+
+            rootVisualElement.Clear();
+
+            rootVisualElement.styleSheets.Add(styleSheet);
+            rootVisualElement.Add(uxml);
+
+            window._tableManager = new TableManager(rootVisualElement, uxml.Q<ScrollView>("body"), database.Columns, database.GetValues());
+            window._tableManager.ShortcutKeySystem.SetupRootVisualElementForKeyboardInput();
+            window._tableManager.ShortcutKeySystem.RegisterShortcuts();
         }
 
         private void OnEnable()
         {
+            if (_database != null) SetupWindow(this);
             _tableManager?.ShortcutKeySystem.RegisterShortcuts();
         }
 
@@ -58,11 +71,5 @@ namespace Editor
         {
             _tableManager?.ShortcutKeySystem.UnregisterShortcuts();
         }
-
-        // デバッグ用
-        // private void OnGUI()
-        // {
-        //     Debug.Log(rootVisualElement.panel.focusController.focusedElement);
-        // }
     }
 }

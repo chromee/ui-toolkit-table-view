@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Editor.Data;
 using UnityEngine.UIElements;
 
 namespace Editor.VisualElements
@@ -12,7 +13,7 @@ namespace Editor.VisualElements
         public IReadOnlyList<DataRow> DataRows => _dataRows;
         public readonly EmptyRow EmptyRow;
 
-        public Table(ColInfo[] colInfos, object[][] rowValues = null)
+        public Table(ColumnMetadata[] colInfos, object[][] rowValues = null)
         {
             AddToClassList("table");
 
@@ -35,26 +36,12 @@ namespace Editor.VisualElements
             Add(EmptyRow);
         }
 
-        public DataRow AddDataRow(ColInfo[] colInfos, object[] rowValues)
+        public DataRow AddDataRow(ColumnMetadata[] colInfos, object[] rowValues)
         {
             var dataRow = new DataRow(_dataRows.Count, colInfos, rowValues);
             _dataRows.Add(dataRow);
             Insert(Children().Count() - 1, dataRow);
             return dataRow;
-        }
-    }
-
-    public class ColInfo
-    {
-        public readonly Type Type;
-        public readonly string Name;
-        public float Width { get; set; }
-
-        public ColInfo(Type type, string name, float width)
-        {
-            Type = type;
-            Name = name;
-            Width = width;
         }
     }
 }

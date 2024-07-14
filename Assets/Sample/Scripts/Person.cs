@@ -1,13 +1,7 @@
 ﻿using System;
 
-namespace Editor.Sample
+namespace Sample.Scripts
 {
-    [Serializable]
-    public class PersonList
-    {
-        public Person[] Persons;
-    }
-    
     [Serializable]
     public class Person
     {
@@ -15,6 +9,7 @@ namespace Editor.Sample
         public string Name;
         public float Height;
         public Gender Gender;
+        public bool IsMarried;
     }
 
     public enum Gender

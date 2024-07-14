@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Editor.Data;
 using UnityEngine.UIElements;
 
 namespace Editor.VisualElements
@@ -9,7 +10,7 @@ namespace Editor.VisualElements
         private readonly HeaderCell[] _cells;
         public IReadOnlyList<HeaderCell> Cells => _cells;
 
-        public HeaderRow(ColInfo[] colInfos)
+        public HeaderRow(ColumnMetadata[] colInfos)
         {
             AddToClassList("row");
 

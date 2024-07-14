@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08bf108940554d07993d23c6ad593e6d, type: 3}
+  m_Name: PersonDatabase
+  m_EditorClassIdentifier: 
+  _columns:
+  - Name: Id
+    TypeName: int
+    Width: 100
+  - Name: Name
+    TypeName: string
+    Width: 100
+  - Name: Height
+    TypeName: float
+    Width: 100
+  - Name: Gender
+    TypeName: Sample.Scripts.Gender, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+    Width: 100
+  - Name: IsMarried
+    TypeName: bool
+    Width: 100
+  _data:
+  - Id: 1
+    Name: Taro
+    Height: 170
+    Gender: 0
+    IsMarried: 0
+  - Id: 2
+    Name: Hanaco
+    Height: 150
+    Gender: 1
+    IsMarried: 0
+  - Id: 2
+    Name: Hanaco
+    Height: 150
+    Gender: 1
+    IsMarried: 0

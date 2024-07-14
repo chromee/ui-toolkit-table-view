@@ -15,7 +15,7 @@ namespace Editor.Utilities
         {
             if (KeyCode.Alpha0 <= keyCode && keyCode <= KeyCode.Alpha9) return keyCode - KeyCode.Alpha0;
             if (KeyCode.Keypad0 <= keyCode && keyCode <= KeyCode.Keypad9) return keyCode - KeyCode.Keypad0;
-            throw new ArgumentException("The provided KeyCode is not a numeric key.");
+            return -1;
         }
 
         public static string KeyCodeToString(this KeyCode keyCode, bool isShiftPressed)

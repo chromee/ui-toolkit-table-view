@@ -18,6 +18,7 @@ namespace Editor.VisualElements.Cells
             if (_isEditing) return;
 
             var num = evt.keyCode.GetNumericValue();
+            if (num < 0) return;
             this.ExecAfter1Frame(() => StartEditing(num));
         }
 

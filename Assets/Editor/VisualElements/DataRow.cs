@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Editor.Data;
 using UnityEngine.UIElements;
 
 namespace Editor.VisualElements
@@ -13,7 +14,7 @@ namespace Editor.VisualElements
         public IReadOnlyList<Cell> Cells => _cells;
         public new Cell this[int index] => _cells[index];
 
-        public DataRow(int index, ColInfo[] colInfos, object[] values = null)
+        public DataRow(int index, ColumnMetadata[] colInfos, object[] values = null)
         {
             AddToClassList("row");
 

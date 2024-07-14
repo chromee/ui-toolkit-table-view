@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using Editor.Data;
+using Editor.Utilities;
 using Editor.VisualElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -8,8 +10,9 @@ namespace Editor.System
     public class ResizeColSystem
     {
         private readonly VisualElement _rootVisualElement;
+        private readonly ScrollView _body;
         private readonly Table _table;
-        private readonly ColInfo[] _colInfos;
+        private readonly ColumnMetadata[] _colInfos;
         private readonly SelectSystem _selectSystem;
         private readonly CopyPasteSystem _copyPasteSystem;
 
@@ -18,9 +21,10 @@ namespace Editor.System
         private Vector2 _initialMousePosition;
         private float _initialColumnWidth;
 
-        public ResizeColSystem(VisualElement rootVisualElement, Table table, ColInfo[] colInfos, SelectSystem selectSystem, CopyPasteSystem copyPasteSystem)
+        public ResizeColSystem(VisualElement rootVisualElement, ScrollView body, Table table, ColumnMetadata[] colInfos, SelectSystem selectSystem, CopyPasteSystem copyPasteSystem)
         {
             _rootVisualElement = rootVisualElement;
+            _body = body;
             _table = table;
             _colInfos = colInfos;
             _selectSystem = selectSystem;
@@ -68,6 +72,7 @@ namespace Editor.System
             _isResizing = false;
             _rootVisualElement.UnregisterCallback<MouseMoveEvent>(Resizing);
             _rootVisualElement.UnregisterCallback<MouseUpEvent>(StopResizing);
+            _body.ExecAfter1Frame(() => _body.ForceUpdate());
         }
     }
 }
