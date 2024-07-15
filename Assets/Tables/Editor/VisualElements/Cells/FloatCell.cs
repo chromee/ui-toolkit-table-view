@@ -1,0 +1,68 @@
+﻿using System.Globalization;
+using Tables.Editor.Utilities;
+using Tables.Runtime;
+using UnityEditor;
+using UnityEditor.UIElements;
+using UnityEngine.UIElements;
+
+namespace Tables.Editor.VisualElements.Cells
+{
+    public class FloatCell : Cell<float>
+    {
+        private VisualElement _body;
+        private bool _isEditing;
+
+        public FloatCell(int row, int col, float value, ColumnMetadata metadata, SerializedObject serializedObject, SerializedProperty dataProperty) : base(row, col, value, metadata, serializedObject, dataProperty)
+        {
+            if (dataProperty != null) dataProperty.FindPropertyRelative(metadata.Name).floatValue = value;
+        }
+
+        public override void StartEditing() => StartEditing(Value);
+
+        public override void StartEditingByKeyDown(KeyDownEvent evt)
+        {
+            if (_isEditing) return;
+
+            var num = evt.keyCode.GetNumericValue();
+            if (num < 0) return;
+            this.ExecAfter1Frame(() => StartEditing(num));
+        }
+
+        protected override void RefreshView()
+        {
+            Clear();
+            _body = new Label { text = Value.ToString(CultureInfo.InvariantCulture) };
+            Add(_body);
+        }
+
+        private void StartEditing(float value)
+        {
+            _isEditing = true;
+
+            var floatField = new FloatField { value = value, };
+            if (DataProperty != null) floatField.BindProperty(DataProperty.FindPropertyRelative(Metadata.Name));
+            AddToClassList("input-cell");
+
+            _body.RemoveFromHierarchy();
+            Add(floatField);
+
+            floatField.RegisterCallback<FocusInEvent>(_ =>
+            {
+                this.ExecAfter1Frame(() => floatField.SelectRange(floatField.text.Length, floatField.text.Length));
+            });
+
+            floatField.RegisterCallback<FocusOutEvent>(_ =>
+            {
+                var prev = Value;
+                Value = floatField.value;
+                OnValueChanged(prev, Value);
+                floatField.RemoveFromHierarchy();
+                RemoveFromClassList("input-cell");
+                Add(_body);
+                _isEditing = false;
+            });
+
+            floatField.Focus();
+        }
+    }
+}

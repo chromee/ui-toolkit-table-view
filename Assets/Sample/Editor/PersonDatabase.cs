@@ -1,6 +1,6 @@
 ﻿using System.Linq;
-using Editor.Data;
 using Sample.Scripts;
+using Tables.Runtime;
 using UnityEngine;
 
 namespace Sample.Editor
