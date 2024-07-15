@@ -9,6 +9,9 @@ namespace Editor.VisualElements.Cells
     {
         public BoolCell(int row, int col, bool value, ColumnMetadata metadata, SerializedProperty dataProperty) : base(row, col, value, metadata, dataProperty)
         {
+            if (dataProperty != null) dataProperty.FindPropertyRelative(metadata.Name).boolValue = value;
+            AddToClassList("input-cell");
+            
             var toggle = new Toggle { text = string.Empty, value = Value };
             toggle.RegisterValueChangedCallback(evt =>
             {

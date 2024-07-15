@@ -39,9 +39,24 @@ MonoBehaviour:
     Name: Hanaco
     Height: 150
     Gender: 1
-    IsMarried: 0
+    IsMarried: 1
   - Id: 3
     Name: Hanaco
     Height: 150
     Gender: 1
     IsMarried: 0
+  - Id: 4
+    Name: Hanaco
+    Height: 160
+    Gender: 1
+    IsMarried: 1
+  - Id: 5
+    Name: Koji
+    Height: 170
+    Gender: 0
+    IsMarried: 0
+  - Id: 6
+    Name: Ken
+    Height: 180
+    Gender: 0
+    IsMarried: 1

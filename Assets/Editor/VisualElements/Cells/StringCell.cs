@@ -13,7 +13,10 @@ namespace Editor.VisualElements.Cells
         private VisualElement _body;
         private bool _isEditing;
 
-        public StringCell(int row, int col, string value, ColumnMetadata metadata, SerializedProperty dataProperty) : base(row, col, value, metadata, dataProperty) { }
+        public StringCell(int row, int col, string value, ColumnMetadata metadata, SerializedProperty dataProperty) : base(row, col, value, metadata, dataProperty)
+        {
+            if (dataProperty != null) dataProperty.FindPropertyRelative(metadata.Name).stringValue = value;
+        }
 
         public override void StartEditing()
         {

@@ -12,7 +12,10 @@ namespace Editor.VisualElements.Cells
         private VisualElement _body;
         private bool _isEditing;
 
-        public FloatCell(int row, int col, float value, ColumnMetadata metadata, SerializedProperty dataProperty) : base(row, col, value, metadata, dataProperty) { }
+        public FloatCell(int row, int col, float value, ColumnMetadata metadata, SerializedProperty dataProperty) : base(row, col, value, metadata, dataProperty)
+        {
+            if (dataProperty != null) dataProperty.FindPropertyRelative(metadata.Name).floatValue = value;
+        }
 
         public override void StartEditing() => StartEditing(Value);
 

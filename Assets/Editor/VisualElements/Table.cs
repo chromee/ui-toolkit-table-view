@@ -10,6 +10,7 @@ namespace Editor.VisualElements
     public class Table : VisualElement
     {
         private readonly Database _database;
+        private readonly SerializedObject _serializedObject;
         private readonly SerializedProperty _dataListProperty;
 
         public readonly HeaderRow HeaderRow;
@@ -21,8 +22,8 @@ namespace Editor.VisualElements
         {
             _database = database;
 
-            var serializedObject = new SerializedObject(_database);
-            _dataListProperty = serializedObject.FindProperty("_data");
+            _serializedObject = new SerializedObject(_database);
+            _dataListProperty = _serializedObject.FindProperty("_data");
 
             AddToClassList("table");
 
@@ -54,6 +55,7 @@ namespace Editor.VisualElements
             var dataRow = new DataRow(index, _database.Columns, rowValues, dataProperty);
             _dataRows.Add(dataRow);
             Insert(Children().Count() - 1, dataRow);
+            _serializedObject.ApplyModifiedProperties();
             return dataRow;
         }
     }

@@ -10,6 +10,7 @@ namespace Editor.VisualElements.Cells
     {
         public EnumCell(int row, int col, Enum value, ColumnMetadata metadata, SerializedProperty dataProperty) : base(row, col, value, metadata, dataProperty)
         {
+            if (dataProperty != null) dataProperty.FindPropertyRelative(metadata.Name).enumValueIndex = Convert.ToInt32(value);
             AddToClassList("input-cell");
 
             var enumField = new EnumField();
