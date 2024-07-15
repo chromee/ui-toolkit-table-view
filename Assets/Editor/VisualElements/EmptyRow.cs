@@ -27,7 +27,7 @@ namespace Editor.VisualElements
                     md.Type.IsValueType ? Activator.CreateInstance(md.Type) :
                     Type.GetTypeCode(md.Type) == TypeCode.String ? string.Empty :
                     null;
-                var cell = Cell.Create(rowIndex, i, value, md, null);
+                var cell = Cell.Create(rowIndex, i, value, md, null, null);
                 _cells[i] = cell;
                 Add(cell);
             }

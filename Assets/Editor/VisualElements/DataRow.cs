@@ -9,13 +9,12 @@ namespace Editor.VisualElements
     public class DataRow : VisualElement
     {
         public readonly int Index;
-
-        public IndexCell IndexCell { get; private set; }
+        public IndexCell IndexCell { get; }
         private readonly Cell[] _cells;
         public IReadOnlyList<Cell> Cells => _cells;
         public new Cell this[int index] => _cells[index];
 
-        public DataRow(int index, ColumnMetadata[] metadata, object[] values, SerializedProperty dataProperty)
+        public DataRow(int index, ColumnMetadata[] metadata, object[] values, SerializedObject serializedObject, SerializedProperty dataProperty)
         {
             AddToClassList("row");
 
@@ -27,7 +26,7 @@ namespace Editor.VisualElements
             for (var i = 0; i < metadata.Length; i++)
             {
                 var md = metadata[i];
-                var cell = Cell.Create(Index, i, values?[i], md, dataProperty);
+                var cell = Cell.Create(Index, i, values?[i], md, serializedObject, dataProperty);
                 _cells[i] = cell;
                 Add(cell);
             }

@@ -7,11 +7,11 @@ namespace Editor.VisualElements.Cells
 {
     public class BoolCell : Cell<bool>
     {
-        public BoolCell(int row, int col, bool value, ColumnMetadata metadata, SerializedProperty dataProperty) : base(row, col, value, metadata, dataProperty)
+        public BoolCell(int row, int col, bool value, ColumnMetadata metadata, SerializedObject serializedObject, SerializedProperty dataProperty) : base(row, col, value, metadata, serializedObject, dataProperty)
         {
             if (dataProperty != null) dataProperty.FindPropertyRelative(metadata.Name).boolValue = value;
             AddToClassList("input-cell");
-            
+
             var toggle = new Toggle { text = string.Empty, value = Value };
             toggle.RegisterValueChangedCallback(evt =>
             {

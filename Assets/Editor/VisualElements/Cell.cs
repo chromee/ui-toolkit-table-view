@@ -10,6 +10,7 @@ namespace Editor.VisualElements
     public abstract class Cell : VisualElement
     {
         protected readonly ColumnMetadata Metadata;
+        protected readonly SerializedObject SerializedObject;
         protected readonly SerializedProperty DataProperty;
 
         public int Row;
@@ -27,24 +28,25 @@ namespace Editor.VisualElements
             set => style.width = value;
         }
 
-        public static Cell Create<T>(int row, int col, T value, ColumnMetadata metadata, SerializedProperty dataProperty)
+        public static Cell Create<T>(int row, int col, T value, ColumnMetadata metadata, SerializedObject serializedObject, SerializedProperty dataProperty)
         {
             return value switch
             {
-                string sv => new StringCell(row, col, sv, metadata, dataProperty),
-                int iv => new IntCell(row, col, iv, metadata, dataProperty),
-                float fv => new FloatCell(row, col, fv, metadata, dataProperty),
-                bool bv => new BoolCell(row, col, bv, metadata, dataProperty),
-                Enum ev => new EnumCell(row, col, ev, metadata, dataProperty),
-                _ => new StringCell(row, col, value.ToString(), metadata, dataProperty),
+                string sv => new StringCell(row, col, sv, metadata, serializedObject, dataProperty),
+                int iv => new IntCell(row, col, iv, metadata, serializedObject, dataProperty),
+                float fv => new FloatCell(row, col, fv, metadata, serializedObject, dataProperty),
+                bool bv => new BoolCell(row, col, bv, metadata, serializedObject, dataProperty),
+                Enum ev => new EnumCell(row, col, ev, metadata, serializedObject, dataProperty),
+                _ => new StringCell(row, col, value.ToString(), metadata, serializedObject, dataProperty),
             };
         }
 
-        protected Cell(int row, int col, ColumnMetadata metadata, SerializedProperty dataProperty)
+        protected Cell(int row, int col, ColumnMetadata metadata, SerializedObject serializedObject, SerializedProperty dataProperty)
         {
             Row = row;
             Col = col;
             Metadata = metadata;
+            SerializedObject = serializedObject;
             DataProperty = dataProperty;
             Width = metadata.Width;
 
@@ -75,7 +77,7 @@ namespace Editor.VisualElements
 
         public override object Val => Value;
 
-        protected Cell(int row, int col, T value, ColumnMetadata metadata, SerializedProperty dataProperty) : base(row, col, metadata, dataProperty)
+        protected Cell(int row, int col, T value, ColumnMetadata metadata, SerializedObject serializedObject, SerializedProperty dataProperty) : base(row, col, metadata, serializedObject, dataProperty)
         {
             Value = value;
         }

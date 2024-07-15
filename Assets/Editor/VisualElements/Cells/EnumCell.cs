@@ -8,7 +8,7 @@ namespace Editor.VisualElements.Cells
 {
     public class EnumCell : Cell<Enum>
     {
-        public EnumCell(int row, int col, Enum value, ColumnMetadata metadata, SerializedProperty dataProperty) : base(row, col, value, metadata, dataProperty)
+        public EnumCell(int row, int col, Enum value, ColumnMetadata metadata, SerializedObject serializedObject, SerializedProperty dataProperty) : base(row, col, value, metadata, serializedObject, dataProperty)
         {
             if (dataProperty != null) dataProperty.FindPropertyRelative(metadata.Name).enumValueIndex = Convert.ToInt32(value);
             AddToClassList("input-cell");

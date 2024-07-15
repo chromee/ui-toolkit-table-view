@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Editor.Data;
 using UnityEditor;
@@ -36,7 +35,7 @@ namespace Editor.VisualElements
                 for (var i = 0; i < data.Length; i++)
                 {
                     var dataProperty = _dataListProperty.GetArrayElementAtIndex(i);
-                    var dataRow = new DataRow(i, _database.Columns, data[i], dataProperty);
+                    var dataRow = new DataRow(i, _database.Columns, data[i], _serializedObject, dataProperty);
                     _dataRows.Add(dataRow);
                     Add(dataRow);
                 }
@@ -52,7 +51,7 @@ namespace Editor.VisualElements
             var index = _dataRows.Count;
             _dataListProperty.InsertArrayElementAtIndex(index);
             var dataProperty = _dataListProperty.GetArrayElementAtIndex(index);
-            var dataRow = new DataRow(index, _database.Columns, rowValues, dataProperty);
+            var dataRow = new DataRow(index, _database.Columns, rowValues, _serializedObject, dataProperty);
             _dataRows.Add(dataRow);
             Insert(Children().Count() - 1, dataRow);
             _serializedObject.ApplyModifiedProperties();

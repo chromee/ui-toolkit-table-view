@@ -46,6 +46,11 @@ namespace Editor.System
             else if (ev.keyCode == KeyCode.Y && Event.current.control) _undoRedoSystem.Redo(_rootVisualElement);
             else if (ev.keyCode == KeyCode.Escape) CancelAll();
             else if (ev.keyCode == KeyCode.Delete) _deleteSystem.DeleteSelected();
+            else if (ev.keyCode == KeyCode.UpArrow) _selectSystem.SelectUp();
+            else if (ev.keyCode == KeyCode.DownArrow) _selectSystem.SelectDown();
+            else if (ev.keyCode == KeyCode.LeftArrow) _selectSystem.SelectLeft();
+            else if (ev.keyCode == KeyCode.RightArrow) _selectSystem.SelectRight();
+            else if (ev.keyCode == KeyCode.F2) _selectSystem.StartSelectedCell?.StartEditing();
             else _selectSystem.StartSelectedCell?.StartEditingByKeyDown(ev);
         }
 

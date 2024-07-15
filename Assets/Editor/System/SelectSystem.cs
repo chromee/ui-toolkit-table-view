@@ -54,7 +54,8 @@ namespace Editor.System
             StartSelectedRow = row;
             _selectMarker.Fit(row.Cells.First());
             _selectMarker.IsVisible = true;
-            _selectRangeMarker.IsVisible = false;
+            _selectRangeMarker.Fit(row.Cells.First(), row.Cells.Last());
+            _selectRangeMarker.IsVisible = true;
             IsSelecting = true;
         }
 
@@ -73,6 +74,48 @@ namespace Editor.System
         {
             if (!IsSelecting) return;
             IsSelecting = false;
+        }
+
+        public void SelectUp()
+        {
+            EndSelecting();
+            if (StartSelectedCell == null) return;
+            var row = Mathf.Max(0, StartSelectedCell.Row - 1);
+            SelectCell(_table.DataRows[row][StartSelectedCell.Col]);
+        }
+
+        public void SelectDown()
+        {
+            EndSelecting();
+            if (StartSelectedCell == null) return;
+            var row = Mathf.Min(_table.DataRows.Count - 1, StartSelectedCell.Row + 1);
+            SelectCell(_table.DataRows[row][StartSelectedCell.Col]);
+        }
+
+        public void SelectLeft()
+        {
+            EndSelecting();
+            if (StartSelectedCell == null) return;
+            var row = _table.DataRows[StartSelectedCell.Row];
+            var col = Mathf.Max(0, StartSelectedCell.Col - 1);
+            SelectCell(row[col]);
+        }
+
+        public void SelectRight()
+        {
+            EndSelecting();
+            if (StartSelectedCell == null) return;
+            var row = _table.DataRows[StartSelectedCell.Row];
+            var col = Mathf.Min(row.Cells.Count - 1, StartSelectedCell.Col + 1);
+            SelectCell(_table.DataRows[StartSelectedCell.Row][col]);
+        }
+
+        private void SelectCell(Cell cell)
+        {
+            StartSelectedCell = cell;
+            _selectMarker.Fit(cell);
+            _selectMarker.IsVisible = true;
+            _selectRangeMarker.IsVisible = false;
         }
 
         public void CancelSelecting()
