@@ -25,7 +25,7 @@ namespace Tables.Editor.VisualElements.Cells
 
             var num = evt.keyCode.GetNumericValue();
             if (num < 0) return;
-            this.ExecAfter1Frame(() => StartEditing(num));
+            this.ExecAfterFrame(() => StartEditing(num));
         }
 
         protected override void RefreshView()
@@ -40,28 +40,35 @@ namespace Tables.Editor.VisualElements.Cells
             _isEditing = true;
 
             var floatField = new FloatField { value = value, };
-            if (DataProperty != null) floatField.BindProperty(DataProperty.FindPropertyRelative(Metadata.Name));
-            AddToClassList("input-cell");
 
-            _body.RemoveFromHierarchy();
-            Add(floatField);
+            if (DataProperty != null)
+            {
+                var property = DataProperty.FindPropertyRelative(Metadata.Name);
+                property.floatValue = value;
+                SerializedObject.ApplyModifiedProperties();
+                floatField.BindProperty(property);
+            }
 
             floatField.RegisterCallback<FocusInEvent>(_ =>
             {
-                this.ExecAfter1Frame(() => floatField.SelectRange(floatField.text.Length, floatField.text.Length));
+                this.ExecAfterFrame(() => floatField.SelectRange(floatField.text.Length, floatField.text.Length));
             });
 
             floatField.RegisterCallback<FocusOutEvent>(_ =>
             {
                 var prev = Value;
                 Value = floatField.value;
-                OnValueChanged(prev, Value);
+                ValueChangeFromEdit(prev, Value);
                 floatField.RemoveFromHierarchy();
                 RemoveFromClassList("input-cell");
                 Add(_body);
                 _isEditing = false;
             });
 
+            AddToClassList("input-cell");
+
+            _body.RemoveFromHierarchy();
+            Add(floatField);
             floatField.Focus();
         }
     }

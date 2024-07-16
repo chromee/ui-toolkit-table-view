@@ -6,9 +6,9 @@ namespace Tables.Editor.Utilities
 {
     public static class VisualElementUtility
     {
-        public static void ExecAfter1Frame(this VisualElement ve, Action action)
+        public static void ExecAfterFrame(this VisualElement ve, Action action, int delayFrame = 0)
         {
-            ve.schedule.Execute(action).ExecuteLater(0);
+            ve.schedule.Execute(action).ExecuteLater(delayFrame);
         }
 
         public static void ForceUpdate(this ScrollView view)

@@ -24,7 +24,7 @@ namespace Tables.Editor.VisualElements.Cells
 
             var num = evt.keyCode.GetNumericValue();
             if (num < 0) return;
-            this.ExecAfter1Frame(() => StartEditing(num));
+            this.ExecAfterFrame(() => StartEditing(num));
         }
 
         protected override void RefreshView()
@@ -39,27 +39,35 @@ namespace Tables.Editor.VisualElements.Cells
             _isEditing = true;
 
             var integerField = new IntegerField { value = value, };
-            if (DataProperty != null) integerField.BindProperty(DataProperty.FindPropertyRelative(Metadata.Name));
-            AddToClassList("input-cell");
 
-            _body.RemoveFromHierarchy();
-            Add(integerField);
+            if (DataProperty != null)
+            {
+                var property = DataProperty.FindPropertyRelative(Metadata.Name);
+                property.intValue = value;
+                SerializedObject.ApplyModifiedProperties();
+                integerField.BindProperty(property);
+            }
 
             integerField.RegisterCallback<FocusInEvent>(_ =>
             {
-                this.ExecAfter1Frame(() => integerField.SelectRange(integerField.text.Length, integerField.text.Length));
+                this.ExecAfterFrame(() => integerField.SelectRange(integerField.text.Length, integerField.text.Length));
             });
 
             integerField.RegisterCallback<FocusOutEvent>(_ =>
             {
                 var prev = Value;
                 Value = integerField.value;
-                OnValueChanged(prev, Value);
+                ValueChangeFromEdit(prev, Value);
                 integerField.RemoveFromHierarchy();
                 RemoveFromClassList("input-cell");
                 Add(_body);
                 _isEditing = false;
             });
+
+            AddToClassList("input-cell");
+
+            _body.RemoveFromHierarchy();
+            Add(integerField);
             integerField.Focus();
         }
     }

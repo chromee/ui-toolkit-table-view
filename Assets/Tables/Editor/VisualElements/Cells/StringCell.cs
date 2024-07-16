@@ -28,7 +28,7 @@ namespace Tables.Editor.VisualElements.Cells
             if (_isEditing) return;
 
             var str = evt.keyCode.KeyCodeToString(Event.current.shift);
-            if (!string.IsNullOrEmpty(str)) this.ExecAfter1Frame(() => StartEditing(str));
+            if (!string.IsNullOrEmpty(str)) this.ExecAfterFrame(() => StartEditing(str));
         }
 
         protected override void RefreshView()
@@ -42,28 +42,35 @@ namespace Tables.Editor.VisualElements.Cells
         {
             _isEditing = true;
 
-            _body.RemoveFromHierarchy();
-
             var textField = new TextField { value = value, };
-            if (DataProperty != null) textField.BindProperty(DataProperty.FindPropertyRelative(Metadata.Name));
-            AddToClassList("input-cell");
+
+            if (DataProperty != null)
+            {
+                var property = DataProperty.FindPropertyRelative(Metadata.Name);
+                property.stringValue = value;
+                SerializedObject.ApplyModifiedProperties();
+                textField.BindProperty(property);
+            }
 
             textField.RegisterCallback<FocusInEvent>(_ =>
             {
-                this.ExecAfter1Frame(() => textField.SelectRange(textField.text.Length, textField.text.Length));
+                this.ExecAfterFrame(() => textField.SelectRange(textField.text.Length, textField.text.Length));
             });
 
             textField.RegisterCallback<FocusOutEvent>(_ =>
             {
                 var prev = Value;
                 Value = textField.value;
-                OnValueChanged(prev, Value);
+                ValueChangeFromEdit(prev, Value);
                 textField.RemoveFromHierarchy();
                 RemoveFromClassList("input-cell");
                 Add(_body);
                 _isEditing = false;
             });
 
+            AddToClassList("input-cell");
+
+            _body.RemoveFromHierarchy();
             Add(textField);
             textField.Focus();
         }

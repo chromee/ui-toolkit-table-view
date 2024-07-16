@@ -111,3 +111,12 @@
     border-top-color: rgb(0, 0, 0);
     border-bottom-color: rgb(0, 0, 0);
 }
+
+.warning-cell {
+    background-color: rgb(255, 217, 102);
+    color: rgb(0, 0, 0);
+}
+
+.error-cell {
+    background-color: rgb(224, 102, 102);
+}

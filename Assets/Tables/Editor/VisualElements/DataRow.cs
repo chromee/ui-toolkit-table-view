@@ -8,16 +8,19 @@ namespace Tables.Editor.VisualElements
     public class DataRow : VisualElement
     {
         public readonly int Index;
+        public readonly object Data;
+        
         public IndexCell IndexCell { get; }
         private readonly Cell[] _cells;
         public IReadOnlyList<Cell> Cells => _cells;
         public new Cell this[int index] => _cells[index];
 
-        public DataRow(int index, ColumnMetadata[] metadata, object[] values, SerializedObject serializedObject, SerializedProperty dataProperty)
+        public DataRow(int index, ColumnMetadata[] metadata, object data, object[] values, SerializedObject serializedObject, SerializedProperty dataProperty)
         {
             AddToClassList("row");
 
             Index = index;
+            Data = data;
             IndexCell = new IndexCell(Index);
             Add(IndexCell);
 

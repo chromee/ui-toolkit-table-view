@@ -18,12 +18,12 @@ MonoBehaviour:
     Width: 100
   - Name: Name
     TypeName: string
-    Width: 225
+    Width: 240
   - Name: Height
     TypeName: float
     Width: 100
   - Name: Gender
-    TypeName: Sample.Scripts.Gender, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+    TypeName: Tables.Sample.Scripts.Gender, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
     Width: 100
   - Name: IsMarried
@@ -39,24 +39,34 @@ MonoBehaviour:
     Name: Hanaco
     Height: 150
     Gender: 1
-    IsMarried: 1
-  - Id: 3
-    Name: Hanaco
-    Height: 150
-    Gender: 1
     IsMarried: 0
   - Id: 4
+    Name: Hanacoaiueo
+    Height: 120
+    Gender: 1
+    IsMarried: 0
+  - Id: 5
     Name: Hanaco
     Height: 160
     Gender: 1
     IsMarried: 1
-  - Id: 5
-    Name: Koji
-    Height: 170
+  - Id: 6
+    Name: TTT
+    Height: -2
     Gender: 0
     IsMarried: 0
-  - Id: 6
-    Name: Ken
+  - Id: 7
+    Name: aaa
     Height: 180
+    Gender: 0
+    IsMarried: 1
+  - Id: 8
+    Name: dfas
+    Height: 8758
+    Gender: 0
+    IsMarried: 0
+  - Id: 9
+    Name: 
+    Height: 170
     Gender: 0
     IsMarried: 1

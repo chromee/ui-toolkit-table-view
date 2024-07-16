@@ -71,7 +71,7 @@ namespace Tables.Editor.System
             _isResizing = false;
             _rootVisualElement.UnregisterCallback<MouseMoveEvent>(Resizing);
             _rootVisualElement.UnregisterCallback<MouseUpEvent>(StopResizing);
-            _body.ExecAfter1Frame(() => _body.ForceUpdate());
+            _body.ExecAfterFrame(() => _body.ForceUpdate());
         }
     }
 }

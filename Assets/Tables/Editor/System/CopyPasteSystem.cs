@@ -37,9 +37,9 @@ namespace Tables.Editor.System
             foreach (var row in selectedCells)
             foreach (var cell in row)
             {
-                var prev = cell.Val;
+                var prev = cell.GetValue();
                 if (!cell.TryPaste(CopiedCell)) continue;
-                commandSet.Commands.Add(new CommandSet.Command { Cell = cell, From = prev, To = CopiedCell.Val });
+                commandSet.Commands.Add(new CommandSet.Command { Cell = cell, From = prev, To = CopiedCell.GetValue() });
             }
 
             if (commandSet.Commands.Any()) _undoRedoSystem.AddUndoCommand(commandSet);

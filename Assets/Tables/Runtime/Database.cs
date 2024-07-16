@@ -9,7 +9,10 @@ namespace Tables.Runtime
         [SerializeField] private ColumnMetadata[] _columns;
         public ColumnMetadata[] Columns => _columns;
 
-        public abstract object[][] GetData();
+        public abstract object[] GetData();
+        public abstract object[][] GetDataAsArray();
+
+        public abstract ValidationResult Validate(ColumnMetadata column, object data, object value);
 
         protected abstract Type GetDataType();
 
@@ -38,6 +41,20 @@ namespace Tables.Runtime
     {
         [SerializeField] private T[] _data;
         public T[] Data => _data;
+
+        public override object[] GetData() => Data as object[];
+
+        public override ValidationResult Validate(ColumnMetadata column, object data, object value)
+        {
+            if (this is IValidator<T> validator)
+            {
+                return validator.Validate(column, (T)data, value);
+            }
+            else
+            {
+                return ValidationResult.Success();
+            }
+        }
 
         protected override Type GetDataType() => typeof(T);
     }

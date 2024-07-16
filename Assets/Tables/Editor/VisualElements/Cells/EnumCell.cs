@@ -10,18 +10,25 @@ namespace Tables.Editor.VisualElements.Cells
     {
         public EnumCell(int row, int col, Enum value, ColumnMetadata metadata, SerializedObject serializedObject, SerializedProperty dataProperty) : base(row, col, value, metadata, serializedObject, dataProperty)
         {
-            if (dataProperty != null) dataProperty.FindPropertyRelative(metadata.Name).enumValueIndex = Convert.ToInt32(value);
-            AddToClassList("input-cell");
-
             var enumField = new EnumField();
             enumField.Init(Value);
+
             enumField.RegisterValueChangedCallback(evt =>
             {
                 var prev = Value;
                 Value = evt.newValue;
-                OnValueChanged(prev, Value);
+                ValueChangeFromEdit(prev, Value);
             });
-            if (DataProperty != null) enumField.BindProperty(DataProperty.FindPropertyRelative(metadata.Name));
+
+            if (DataProperty != null)
+            {
+                var property = DataProperty.FindPropertyRelative(metadata.Name);
+                property.enumValueIndex = Convert.ToInt32(value);
+                enumField.BindProperty(DataProperty.FindPropertyRelative(metadata.Name));
+            }
+
+            AddToClassList("input-cell");
+
             Add(enumField);
         }
 

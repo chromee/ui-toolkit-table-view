@@ -16,6 +16,7 @@ namespace Tables.Editor
         public readonly ResizeColSystem ResizeColSystem;
         public readonly SelectSystem SelectSystem;
         public readonly DeleteSystem DeleteSystem;
+        public readonly ValidateSystem ValidateSystem;
         public readonly ShortcutKeySystem ShortcutKeySystem;
 
         private readonly VisualElement _rootVisualElement;
@@ -34,6 +35,7 @@ namespace Tables.Editor
             CopyPasteSystem = new CopyPasteSystem(_rootVisualElement, SelectSystem, UndoRedoSystem);
             ResizeColSystem = new ResizeColSystem(database, _rootVisualElement, body, Table, SelectSystem, CopyPasteSystem);
             DeleteSystem = new DeleteSystem(SelectSystem, UndoRedoSystem);
+            ValidateSystem = new ValidateSystem(database, Table);
             ShortcutKeySystem = new ShortcutKeySystem(_rootVisualElement, CopyPasteSystem, UndoRedoSystem, SelectSystem, DeleteSystem);
 
             foreach (var headerCell in Table.HeaderRow.Cells)
@@ -52,7 +54,7 @@ namespace Tables.Editor
 
             Table.EmptyRow.AddRowButton.clicked += () =>
             {
-                var dataRow = Table.AddDataRow(Table.EmptyRow.Cells.Select(cell => cell.Val).ToArray());
+                var dataRow = Table.AddDataRow(Table.EmptyRow.Cells.Select(cell => cell.GetValue()).ToArray());
                 foreach (var cell in dataRow.Cells) RegisterCellCallback(cell);
             };
 
@@ -66,6 +68,8 @@ namespace Tables.Editor
                 SelectSystem.EndSelecting();
                 SelectSystem.EndRowSelecting();
             });
+
+            ValidateSystem.StartValidate();
         }
 
         private void RegisterIndexCellCallback(DataRow dataRow)
@@ -83,7 +87,7 @@ namespace Tables.Editor
             cell.OnValueChangedFromEdit += (from, to) =>
             {
                 UndoRedoSystem.AddUndoCommand(cell, from, to);
-                _rootVisualElement.ExecAfter1Frame(() => _rootVisualElement.Focus());
+                _rootVisualElement.ExecAfterFrame(() => _rootVisualElement.Focus());
             };
 
             cell.RegisterCallback<MouseDownEvent>(evt =>

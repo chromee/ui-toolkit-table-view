@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Tables.Runtime;
 using UnityEditor;
@@ -17,6 +18,8 @@ namespace Tables.Editor.VisualElements
         public IReadOnlyList<DataRow> DataRows => _dataRows;
         public readonly EmptyRow EmptyRow;
 
+        public event Action<DataRow> OnRowAdded;
+
         public Table(Database database)
         {
             _database = database;
@@ -30,19 +33,21 @@ namespace Tables.Editor.VisualElements
             Add(HeaderRow);
 
             var data = _database.GetData();
-            if (data != null)
+            var dataMatrix = _database.GetDataAsArray();
+            if (dataMatrix != null)
             {
-                for (var i = 0; i < data.Length; i++)
+                for (var i = 0; i < dataMatrix.Length; i++)
                 {
                     var dataProperty = _dataListProperty.GetArrayElementAtIndex(i);
-                    var dataRow = new DataRow(i, _database.Columns, data[i], _serializedObject, dataProperty);
+                    var dataRow = new DataRow(i, _database.Columns, data[i], dataMatrix[i], _serializedObject, dataProperty);
                     _dataRows.Add(dataRow);
+                    OnRowAdded?.Invoke(dataRow);
                     Add(dataRow);
                 }
             }
 
             // Create empty row
-            EmptyRow = new EmptyRow(data?.Length ?? 0, _database.Columns);
+            EmptyRow = new EmptyRow(dataMatrix?.Length ?? 0, _database.Columns);
             Add(EmptyRow);
         }
 
@@ -51,10 +56,11 @@ namespace Tables.Editor.VisualElements
             var index = _dataRows.Count;
             _dataListProperty.InsertArrayElementAtIndex(index);
             var dataProperty = _dataListProperty.GetArrayElementAtIndex(index);
-            var dataRow = new DataRow(index, _database.Columns, rowValues, _serializedObject, dataProperty);
-            _dataRows.Add(dataRow);
+            var dataRow = new DataRow(index, _database.Columns, dataProperty.boxedValue, rowValues, _serializedObject, dataProperty);
             Insert(Children().Count() - 1, dataRow);
             _serializedObject.ApplyModifiedProperties();
+            _dataRows.Add(dataRow);
+            OnRowAdded?.Invoke(dataRow);
             return dataRow;
         }
     }

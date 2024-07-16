@@ -9,7 +9,7 @@ namespace Tables.Editor.VisualElements
 {
     public abstract class Cell : VisualElement
     {
-        protected readonly ColumnMetadata Metadata;
+        public readonly ColumnMetadata Metadata;
         protected readonly SerializedObject SerializedObject;
         protected readonly SerializedProperty DataProperty;
 
@@ -17,7 +17,9 @@ namespace Tables.Editor.VisualElements
         public int Col;
         public Vector2 Position => new(Col, Row);
 
-        public abstract object Val { get; }
+        public abstract object GetValue();
+
+        public event Action<object, object> OnValueChanged;
         public event Action<object, object> OnValueChangedFromEdit;
 
         public float Width
@@ -56,7 +58,29 @@ namespace Tables.Editor.VisualElements
         public abstract bool TryPaste(Cell from);
         public abstract void ClearValue();
         public Cell<T> As<T>() => this as Cell<T>;
-        protected void OnValueChanged(object prev, object current) => OnValueChangedFromEdit?.Invoke(prev, current);
+
+        protected void ValueChange(object prev, object current) => OnValueChanged?.Invoke(prev, current);
+        protected void ValueChangeFromEdit(object prev, object current) => OnValueChangedFromEdit?.Invoke(prev, current);
+
+        public void ChangeStatus(ValidationResult result)
+        {
+            switch (result.ResultType)
+            {
+                case ValidationResult.Type.Success:
+                    RemoveFromClassList("error-cell");
+                    RemoveFromClassList("warning-cell");
+                    tooltip = null;
+                    break;
+                case ValidationResult.Type.Warning:
+                    AddToClassList("warning-cell");
+                    tooltip = result.Message;
+                    break;
+                case ValidationResult.Type.Error:
+                    AddToClassList("error-cell");
+                    tooltip = result.Message;
+                    break;
+            }
+        }
     }
 
     public abstract class Cell<T> : Cell
@@ -68,12 +92,14 @@ namespace Tables.Editor.VisualElements
             get => _value;
             set
             {
+                var prev = _value;
                 _value = value;
+                ValueChange(prev, _value);
                 RefreshView();
             }
         }
 
-        public override object Val => Value;
+        public override object GetValue() => Value;
 
         protected Cell(int row, int col, T value, ColumnMetadata metadata, SerializedObject serializedObject, SerializedProperty dataProperty) : base(row, col, metadata, serializedObject, dataProperty)
         {

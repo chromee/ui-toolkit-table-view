@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Sample.Scripts
+namespace Tables.Sample.Scripts
 {
     [Serializable]
     public class Person
