@@ -13,7 +13,7 @@ namespace Tables.Editor.VisualElements.Cells
         private VisualElement _body;
         private bool _isEditing;
 
-        public StringCell(int row, int col, string value, ColumnMetadata metadata, SerializedObject serializedObject, SerializedProperty dataProperty) : base(row, col, value, metadata, serializedObject, dataProperty)
+        public StringCell(int row, int col, string value, ColumnMetadata metadata, SerializedProperty dataProperty) : base(row, col, value, metadata, dataProperty)
         {
             if (dataProperty != null) dataProperty.FindPropertyRelative(metadata.Name).stringValue = value;
         }
@@ -47,8 +47,8 @@ namespace Tables.Editor.VisualElements.Cells
             if (DataProperty != null)
             {
                 var property = DataProperty.FindPropertyRelative(Metadata.Name);
-                property.stringValue = value;
-                SerializedObject.ApplyModifiedProperties();
+                property.stringValue = value;   
+                DataProperty.serializedObject.ApplyModifiedProperties();
                 textField.BindProperty(property);
             }
 

@@ -7,7 +7,7 @@ namespace Tables.Editor.VisualElements.Cells
 {
     public class BoolCell : Cell<bool>
     {
-        public BoolCell(int row, int col, bool value, ColumnMetadata metadata, SerializedObject serializedObject, SerializedProperty dataProperty) : base(row, col, value, metadata, serializedObject, dataProperty)
+        public BoolCell(int row, int col, bool value, ColumnMetadata metadata, SerializedProperty dataProperty) : base(row, col, value, metadata, dataProperty)
         {
             var toggle = new Toggle { text = string.Empty, value = Value };
 

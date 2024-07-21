@@ -1,12 +1,9 @@
 ﻿using System.Linq;
 using Tables.Runtime;
 using Tables.Sample.Scripts;
-using UnityEngine;
 
 namespace Tables.Sample.Editor
 {
-    // NOTE: Person から自動生成したい
-    [CreateAssetMenu(fileName = nameof(PersonDatabase), menuName = "Databases/" + nameof(PersonDatabase), order = 0)]
     public partial class PersonDatabase : IPersonValidator
     {
         public ValidationResult ValidateId(Person self, int id)

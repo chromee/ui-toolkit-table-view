@@ -25,11 +25,7 @@ namespace Tables.Editor.System
             foreach (var cell in row.Cells)
             {
                 cell.ChangeStatus(_database.Validate(cell.Metadata, row.Data, cell.GetValue()));
-
-                cell.OnValueChanged += (_, current) =>
-                {
-                    cell.ChangeStatus(_database.Validate(cell.Metadata, row.Data, current));
-                };
+                cell.OnValueChanged += (_, current) => cell.ChangeStatus(_database.Validate(cell.Metadata, row.Data, current));
             }
         }
     }

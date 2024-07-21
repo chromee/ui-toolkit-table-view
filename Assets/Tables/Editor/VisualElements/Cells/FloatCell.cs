@@ -12,7 +12,7 @@ namespace Tables.Editor.VisualElements.Cells
         private VisualElement _body;
         private bool _isEditing;
 
-        public FloatCell(int row, int col, float value, ColumnMetadata metadata, SerializedObject serializedObject, SerializedProperty dataProperty) : base(row, col, value, metadata, serializedObject, dataProperty)
+        public FloatCell(int row, int col, float value, ColumnMetadata metadata, SerializedProperty dataProperty) : base(row, col, value, metadata, dataProperty)
         {
             if (dataProperty != null) dataProperty.FindPropertyRelative(metadata.Name).floatValue = value;
         }
@@ -45,7 +45,7 @@ namespace Tables.Editor.VisualElements.Cells
             {
                 var property = DataProperty.FindPropertyRelative(Metadata.Name);
                 property.floatValue = value;
-                SerializedObject.ApplyModifiedProperties();
+                DataProperty.serializedObject.ApplyModifiedProperties();
                 floatField.BindProperty(property);
             }
 

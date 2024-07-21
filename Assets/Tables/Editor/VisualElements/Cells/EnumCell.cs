@@ -8,7 +8,7 @@ namespace Tables.Editor.VisualElements.Cells
 {
     public class EnumCell : Cell<Enum>
     {
-        public EnumCell(int row, int col, Enum value, ColumnMetadata metadata, SerializedObject serializedObject, SerializedProperty dataProperty) : base(row, col, value, metadata, serializedObject, dataProperty)
+        public EnumCell(int row, int col, Enum value, ColumnMetadata metadata, SerializedProperty dataProperty) : base(row, col, value, metadata, dataProperty)
         {
             var enumField = new EnumField();
             enumField.Init(Value);

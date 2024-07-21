@@ -11,7 +11,7 @@ namespace Tables.Editor.VisualElements.Cells
         private VisualElement _body;
         private bool _isEditing;
 
-        public IntCell(int row, int col, int value, ColumnMetadata metadata, SerializedObject serializedObject, SerializedProperty dataProperty) : base(row, col, value, metadata, serializedObject, dataProperty)
+        public IntCell(int row, int col, int value, ColumnMetadata metadata, SerializedProperty dataProperty) : base(row, col, value, metadata, dataProperty)
         {
             if (dataProperty != null) dataProperty.FindPropertyRelative(metadata.Name).intValue = value;
         }
@@ -44,7 +44,7 @@ namespace Tables.Editor.VisualElements.Cells
             {
                 var property = DataProperty.FindPropertyRelative(Metadata.Name);
                 property.intValue = value;
-                SerializedObject.ApplyModifiedProperties();
+                DataProperty.serializedObject.ApplyModifiedProperties();
                 integerField.BindProperty(property);
             }
 

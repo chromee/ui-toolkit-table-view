@@ -1,10 +1,12 @@
 ﻿using System.Linq;
 using Tables.Runtime;
 using Tables.Sample.Scripts;
+using UnityEngine;
 
 namespace Tables.Sample.Editor
 {
     // 自動生成予定
+    [CreateAssetMenu(fileName = nameof(PersonDatabase), menuName = "Databases/" + nameof(PersonDatabase), order = 0)]
     public partial class PersonDatabase : Database<Person>
     {
         public override object[][] GetDataAsArray()

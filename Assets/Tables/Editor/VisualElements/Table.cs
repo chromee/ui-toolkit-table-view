@@ -10,7 +10,6 @@ namespace Tables.Editor.VisualElements
     public class Table : VisualElement
     {
         private readonly Database _database;
-        private readonly SerializedObject _serializedObject;
         private readonly SerializedProperty _dataListProperty;
 
         public readonly HeaderRow HeaderRow;
@@ -24,8 +23,8 @@ namespace Tables.Editor.VisualElements
         {
             _database = database;
 
-            _serializedObject = new SerializedObject(_database);
-            _dataListProperty = _serializedObject.FindProperty("_data");
+            var serializedObject = new SerializedObject(_database);
+            _dataListProperty = serializedObject.FindProperty("_data");
 
             AddToClassList("table");
 
@@ -39,14 +38,13 @@ namespace Tables.Editor.VisualElements
                 for (var i = 0; i < dataMatrix.Length; i++)
                 {
                     var dataProperty = _dataListProperty.GetArrayElementAtIndex(i);
-                    var dataRow = new DataRow(i, _database.Columns, data[i], dataMatrix[i], _serializedObject, dataProperty);
+                    var dataRow = new DataRow(i, _database.Columns, data[i], dataMatrix[i], dataProperty);
                     _dataRows.Add(dataRow);
                     OnRowAdded?.Invoke(dataRow);
                     Add(dataRow);
                 }
             }
 
-            // Create empty row
             EmptyRow = new EmptyRow(dataMatrix?.Length ?? 0, _database.Columns);
             Add(EmptyRow);
         }
@@ -56,11 +54,18 @@ namespace Tables.Editor.VisualElements
             var index = _dataRows.Count;
             _dataListProperty.InsertArrayElementAtIndex(index);
             var dataProperty = _dataListProperty.GetArrayElementAtIndex(index);
-            var dataRow = new DataRow(index, _database.Columns, dataProperty.boxedValue, rowValues, _serializedObject, dataProperty);
+
+            var dataRow = new DataRow(index, _database.Columns, dataProperty.boxedValue, rowValues, dataProperty);
             Insert(Children().Count() - 1, dataRow);
-            _serializedObject.ApplyModifiedProperties();
+
+            _dataListProperty.serializedObject.ApplyModifiedProperties();
+
+            dataProperty = _dataListProperty.GetArrayElementAtIndex(index);
+            dataRow.SetData(dataProperty.boxedValue);
+
             _dataRows.Add(dataRow);
             OnRowAdded?.Invoke(dataRow);
+
             return dataRow;
         }
     }
