@@ -9,11 +9,9 @@ namespace Tables.Editor.VisualElements
     {
         public readonly int Index;
         public object Data { get; private set; }
-        
         public IndexCell IndexCell { get; }
-        private readonly Cell[] _cells;
-        public IReadOnlyList<Cell> Cells => _cells;
-        public new Cell this[int index] => _cells[index];
+        public Cell[] Cells { get; }
+        public new Cell this[int index] => Cells[index];
 
         public DataRow(int index, ColumnMetadata[] metadata, object data, object[] values, SerializedProperty dataProperty)
         {
@@ -24,16 +22,16 @@ namespace Tables.Editor.VisualElements
             IndexCell = new IndexCell(Index);
             Add(IndexCell);
 
-            _cells = new Cell[metadata.Length];
+            Cells = new Cell[metadata.Length];
             for (var i = 0; i < metadata.Length; i++)
             {
                 var md = metadata[i];
                 var cell = Cell.Create(Index, i, values?[i], md, dataProperty);
-                _cells[i] = cell;
+                Cells[i] = cell;
                 Add(cell);
             }
         }
-        
+
         public void SetData(object data) => Data = data;
     }
 }

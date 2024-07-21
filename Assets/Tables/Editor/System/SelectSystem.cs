@@ -25,8 +25,12 @@ namespace Tables.Editor.System
             _selectRangeMarker = new Marker(rootVisualElement, "select-range-marker");
         }
 
+        #region cell select
+
         public void StartSelecting(Cell cell)
         {
+            CancelSelecting();
+
             StartSelectedCell = cell;
             _selectMarker.Fit(cell);
             _selectMarker.IsVisible = true;
@@ -49,8 +53,14 @@ namespace Tables.Editor.System
             IsSelecting = false;
         }
 
+        #endregion
+
+        #region row select
+
         public void StartRowSelecting(DataRow row)
         {
+            CancelSelecting();
+
             StartSelectedRow = row;
             _selectMarker.Fit(row.Cells.First());
             _selectMarker.IsVisible = true;
@@ -75,6 +85,10 @@ namespace Tables.Editor.System
             if (!IsSelecting) return;
             IsSelecting = false;
         }
+
+        #endregion
+
+        #region arraw select
 
         public void SelectUp()
         {
@@ -106,7 +120,7 @@ namespace Tables.Editor.System
             EndSelecting();
             if (StartSelectedCell == null) return;
             var row = _table.DataRows[StartSelectedCell.Row];
-            var col = Mathf.Min(row.Cells.Count - 1, StartSelectedCell.Col + 1);
+            var col = Mathf.Min(row.Cells.Length - 1, StartSelectedCell.Col + 1);
             SelectCell(_table.DataRows[StartSelectedCell.Row][col]);
         }
 
@@ -118,6 +132,8 @@ namespace Tables.Editor.System
             _selectRangeMarker.IsVisible = false;
         }
 
+        #endregion
+
         public void CancelSelecting()
         {
             StartSelectedCell = null;
@@ -128,33 +144,54 @@ namespace Tables.Editor.System
             _selectRangeMarker.IsVisible = false;
         }
 
+        // TODO: Spanを使う
         public Cell[][] GetSelectedCells()
         {
-            if (StartSelectedCell == null) return null;
-            if (EndSelectedCell == null) return new[] { new[] { StartSelectedCell } };
-
-            var top = Mathf.Min(StartSelectedCell.Row, EndSelectedCell.Row);
-            var bottom = Mathf.Max(StartSelectedCell.Row, EndSelectedCell.Row);
-            var left = Mathf.Min(StartSelectedCell.Col, EndSelectedCell.Col);
-            var right = Mathf.Max(StartSelectedCell.Col, EndSelectedCell.Col);
-
-            var selectedCells = new Cell[bottom - top + 1][];
-            var isSelectedEmptyRowCell = bottom == _table.DataRows.Count;
-            if (isSelectedEmptyRowCell) bottom--;
-
-            for (var i = top; i <= bottom; i++)
+            if (StartSelectedRow != null)
             {
-                selectedCells[i - top] = new Cell[right - left + 1];
-                for (var j = left; j <= right; j++) selectedCells[i - top][j - left] = _table.DataRows[i][j];
+                if (EndSelectedRow == null) return new[] { StartSelectedRow.Cells };
+
+                var topRow = StartSelectedRow.Index < EndSelectedRow.Index ? StartSelectedRow : EndSelectedRow;
+                var bottomRow = StartSelectedRow.Index < EndSelectedRow.Index ? EndSelectedRow : StartSelectedRow;
+
+                var selectedCells = new Cell[bottomRow.Index - topRow.Index + 1][];
+                for (var i = topRow.Index; i <= bottomRow.Index; i++)
+                {
+                    selectedCells[i - topRow.Index] = _table.DataRows[i].Cells;
+                }
+
+                return selectedCells;
             }
 
-            if (isSelectedEmptyRowCell)
+            if (StartSelectedCell != null)
             {
-                selectedCells[bottom - top + 1] = new Cell[right - left + 1];
-                for (var j = left; j <= right; j++) selectedCells[bottom - top + 1][j - left] = _table.EmptyRow.Cells[j];
+                if (EndSelectedCell == null) return new[] { new[] { StartSelectedCell } };
+
+                var top = Mathf.Min(StartSelectedCell.Row, EndSelectedCell.Row);
+                var bottom = Mathf.Max(StartSelectedCell.Row, EndSelectedCell.Row);
+                var left = Mathf.Min(StartSelectedCell.Col, EndSelectedCell.Col);
+                var right = Mathf.Max(StartSelectedCell.Col, EndSelectedCell.Col);
+
+                var selectedCells = new Cell[bottom - top + 1][];
+                var isSelectedEmptyRowCell = bottom == _table.DataRows.Count;
+                if (isSelectedEmptyRowCell) bottom--;
+
+                for (var i = top; i <= bottom; i++)
+                {
+                    selectedCells[i - top] = new Cell[right - left + 1];
+                    for (var j = left; j <= right; j++) selectedCells[i - top][j - left] = _table.DataRows[i][j];
+                }
+
+                if (isSelectedEmptyRowCell)
+                {
+                    selectedCells[bottom - top + 1] = new Cell[right - left + 1];
+                    for (var j = left; j <= right; j++) selectedCells[bottom - top + 1][j - left] = _table.EmptyRow.Cells[j];
+                }
+
+                return selectedCells;
             }
 
-            return selectedCells;
+            return null;
         }
 
         public bool IsSelected(Cell cell)
