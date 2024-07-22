@@ -41,37 +41,35 @@ namespace Tables.Editor.VisualElements.Cells
         private void StartEditing(string value)
         {
             _isEditing = true;
+            StartEdit();
 
             var textField = new TextField { value = value, };
 
             if (CellProperty != null)
             {
-                CellProperty.stringValue = value;   
+                CellProperty.stringValue = value;
                 CellProperty.serializedObject.ApplyModifiedProperties();
                 textField.BindProperty(CellProperty);
             }
 
-            textField.RegisterCallback<FocusInEvent>(_ =>
-            {
-                this.ExecAfterFrame(() => textField.SelectRange(textField.text.Length, textField.text.Length));
-            });
-
-            textField.RegisterCallback<FocusOutEvent>(_ =>
-            {
-                var prev = Value;
-                Value = textField.value;
-                ValueChangeFromEdit(prev, Value);
-                textField.RemoveFromHierarchy();
-                RemoveFromClassList("input-cell");
-                Add(_body);
-                _isEditing = false;
-            });
+            textField.RegisterCallback<FocusOutEvent>(_ => EndEditing(textField));
 
             AddToClassList("input-cell");
-
             _body.RemoveFromHierarchy();
             Add(textField);
             textField.Focus();
+        }
+
+        private void EndEditing(TextField textField)
+        {
+            var prev = Value;
+            Value = textField.value;
+            ValueChangeFromEdit(prev, Value);
+            textField.RemoveFromHierarchy();
+            RemoveFromClassList("input-cell");
+            Add(_body);
+            _isEditing = false;
+            EndEdit();
         }
     }
 }

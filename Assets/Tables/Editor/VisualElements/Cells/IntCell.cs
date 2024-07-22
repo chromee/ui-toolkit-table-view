@@ -37,6 +37,7 @@ namespace Tables.Editor.VisualElements.Cells
         private void StartEditing(int value)
         {
             _isEditing = true;
+            StartEdit();
 
             var integerField = new IntegerField { value = value, };
 
@@ -47,27 +48,24 @@ namespace Tables.Editor.VisualElements.Cells
                 integerField.BindProperty(CellProperty);
             }
 
-            integerField.RegisterCallback<FocusInEvent>(_ =>
-            {
-                this.ExecAfterFrame(() => integerField.SelectRange(integerField.text.Length, integerField.text.Length));
-            });
-
-            integerField.RegisterCallback<FocusOutEvent>(_ =>
-            {
-                var prev = Value;
-                Value = integerField.value;
-                ValueChangeFromEdit(prev, Value);
-                integerField.RemoveFromHierarchy();
-                RemoveFromClassList("input-cell");
-                Add(_body);
-                _isEditing = false;
-            });
+            integerField.RegisterCallback<FocusOutEvent>(_ => EndEditing(integerField));
 
             AddToClassList("input-cell");
-
             _body.RemoveFromHierarchy();
             Add(integerField);
             integerField.Focus();
+        }
+
+        private void EndEditing(IntegerField integerField)
+        {
+            var prev = Value;
+            Value = integerField.value;
+            ValueChangeFromEdit(prev, Value);
+            integerField.RemoveFromHierarchy();
+            RemoveFromClassList("input-cell");
+            Add(_body);
+            _isEditing = false;
+            EndEdit();
         }
     }
 }

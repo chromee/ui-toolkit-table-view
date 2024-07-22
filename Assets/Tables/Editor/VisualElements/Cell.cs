@@ -19,9 +19,6 @@ namespace Tables.Editor.VisualElements
 
         public abstract object GetValue();
 
-        public event Action<object, object> OnValueChanged;
-        public event Action<object, object> OnValueChangedFromEdit;
-
         public float Width
         {
             get => resolvedStyle.width;
@@ -59,9 +56,6 @@ namespace Tables.Editor.VisualElements
         public abstract void ClearValue();
         public Cell<T> As<T>() => this as Cell<T>;
 
-        protected void ValueChange(object prev, object current) => OnValueChanged?.Invoke(prev, current);
-        protected void ValueChangeFromEdit(object prev, object current) => OnValueChangedFromEdit?.Invoke(prev, current);
-
         public void ChangeStatus(ValidationResult result)
         {
             switch (result.ResultType)
@@ -81,6 +75,16 @@ namespace Tables.Editor.VisualElements
                     break;
             }
         }
+
+        public event Action OnStartEditing;
+        public event Action OnEndEditing;
+        public event Action<object, object> OnValueChanged;
+        public event Action<object, object> OnValueChangedFromEdit;
+        
+        protected void StartEdit() => OnStartEditing?.Invoke();
+        protected void EndEdit() => OnEndEditing?.Invoke();
+        protected void ValueChange(object prev, object current) => OnValueChanged?.Invoke(prev, current);
+        protected void ValueChangeFromEdit(object prev, object current) => OnValueChangedFromEdit?.Invoke(prev, current);
     }
 
     public abstract class Cell<T> : Cell

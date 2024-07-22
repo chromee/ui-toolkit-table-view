@@ -38,6 +38,7 @@ namespace Tables.Editor.VisualElements.Cells
         private void StartEditing(float value)
         {
             _isEditing = true;
+            StartEdit();
 
             var floatField = new FloatField { value = value, };
 
@@ -48,27 +49,24 @@ namespace Tables.Editor.VisualElements.Cells
                 floatField.BindProperty(CellProperty);
             }
 
-            floatField.RegisterCallback<FocusInEvent>(_ =>
-            {
-                this.ExecAfterFrame(() => floatField.SelectRange(floatField.text.Length, floatField.text.Length));
-            });
-
-            floatField.RegisterCallback<FocusOutEvent>(_ =>
-            {
-                var prev = Value;
-                Value = floatField.value;
-                ValueChangeFromEdit(prev, Value);
-                floatField.RemoveFromHierarchy();
-                RemoveFromClassList("input-cell");
-                Add(_body);
-                _isEditing = false;
-            });
+            floatField.RegisterCallback<FocusOutEvent>(_ => EndEditing(floatField));
 
             AddToClassList("input-cell");
-
             _body.RemoveFromHierarchy();
             Add(floatField);
             floatField.Focus();
+        }
+
+        private void EndEditing(FloatField floatField)
+        {
+            var prev = Value;
+            Value = floatField.value;
+            ValueChangeFromEdit(prev, Value);
+            floatField.RemoveFromHierarchy();
+            RemoveFromClassList("input-cell");
+            Add(_body);
+            _isEditing = false;
+            EndEdit();
         }
     }
 }
