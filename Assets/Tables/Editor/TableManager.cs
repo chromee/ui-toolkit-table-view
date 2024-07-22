@@ -97,6 +97,9 @@ namespace Tables.Editor
             });
 
             cell.RegisterCallback<MouseEnterEvent>(_ => SelectSystem.Selecting(cell));
+
+            cell.OnStartEditing += () => ShortcutKeySystem.IsEnabled = false;
+            cell.OnEndEditing += () => ShortcutKeySystem.IsEnabled = true;
         }
     }
 }

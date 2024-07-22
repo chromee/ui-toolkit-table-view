@@ -11,6 +11,8 @@ namespace Tables.Editor.System
         private readonly SelectSystem _selectSystem;
         private readonly DeleteSystem _deleteSystem;
 
+        public bool IsEnabled { get; set; } = true;
+
         public ShortcutKeySystem(VisualElement rootVisualElement, CopyPasteSystem copyPasteSystem, UndoRedoSystem undoRedoSystem, SelectSystem selectSystem, DeleteSystem deleteSystem)
         {
             this._rootVisualElement = rootVisualElement;
@@ -39,6 +41,8 @@ namespace Tables.Editor.System
 
         private void OnKeyDown(KeyDownEvent ev)
         {
+            if (!IsEnabled) return;
+
             if (ev.keyCode == KeyCode.C && Event.current.control) _copyPasteSystem.CopyCell();
             else if (ev.keyCode == KeyCode.V && Event.current.control) _copyPasteSystem.PasteCell();
             else if (ev.keyCode == KeyCode.Z && Event.current.control && Event.current.shift) _undoRedoSystem.Redo(_rootVisualElement);
