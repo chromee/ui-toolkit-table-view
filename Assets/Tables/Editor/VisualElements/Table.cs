@@ -70,5 +70,15 @@ namespace Tables.Editor.VisualElements
 
             return dataRow;
         }
+
+        public void RemoveDataRow(DataRow dataRow)
+        {
+            var index = dataRow.Index;
+            _dataListProperty.DeleteArrayElementAtIndex(index);
+            _dataListProperty.serializedObject.ApplyModifiedProperties();
+
+            _dataRows.Remove(dataRow);
+            dataRow.RemoveFromHierarchy();
+        }
     }
 }

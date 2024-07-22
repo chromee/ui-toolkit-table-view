@@ -49,7 +49,7 @@ namespace Tables.Editor.System
             else if (ev.keyCode == KeyCode.Z && Event.current.control) _undoRedoSystem.Undo(_rootVisualElement);
             else if (ev.keyCode == KeyCode.Y && Event.current.control) _undoRedoSystem.Redo(_rootVisualElement);
             else if (ev.keyCode == KeyCode.Escape) CancelAll();
-            else if (ev.keyCode == KeyCode.Delete) _deleteSystem.DeleteSelected();
+            else if (ev.keyCode == KeyCode.Delete) _deleteSystem.Delete();
             else if (ev.keyCode == KeyCode.UpArrow) _selectSystem.SelectUp();
             else if (ev.keyCode == KeyCode.DownArrow) _selectSystem.SelectDown();
             else if (ev.keyCode == KeyCode.LeftArrow) _selectSystem.SelectLeft();

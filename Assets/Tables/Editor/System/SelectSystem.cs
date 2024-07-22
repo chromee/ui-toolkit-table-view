@@ -185,6 +185,23 @@ namespace Tables.Editor.System
             return null;
         }
 
+        public DataRow[] GetSelectedRows()
+        {
+            if (StartSelectedRow == null) return null;
+            if (EndSelectedRow == null) return new[] { StartSelectedRow };
+
+            var topRow = StartSelectedRow.Index < EndSelectedRow.Index ? StartSelectedRow : EndSelectedRow;
+            var bottomRow = StartSelectedRow.Index < EndSelectedRow.Index ? EndSelectedRow : StartSelectedRow;
+
+            var selectedRows = new DataRow[bottomRow.Index - topRow.Index + 1];
+            for (var i = topRow.Index; i <= bottomRow.Index; i++)
+            {
+                selectedRows[i - topRow.Index] = _table.DataRows[i];
+            }
+
+            return selectedRows;
+        }
+
         public bool IsSelected(Cell cell)
         {
             if (StartSelectedCell == null) return false;
