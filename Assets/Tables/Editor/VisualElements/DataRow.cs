@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Tables.Runtime;
 using UnityEditor;
 using UnityEngine.UIElements;
@@ -25,8 +26,9 @@ namespace Tables.Editor.VisualElements
             Cells = new Cell[metadata.Length];
             for (var i = 0; i < metadata.Length; i++)
             {
-                var md = metadata[i];
-                var cell = Cell.Create(Index, i, values?[i], md, rowProperty);
+                var columnMetadata = metadata[i];
+                var defaultValue = values?[i] ?? columnMetadata.GetDefaultValue();
+                var cell = Cell.Create(Index, i, defaultValue, columnMetadata, rowProperty);
                 Cells[i] = cell;
                 Add(cell);
             }

@@ -13,9 +13,11 @@ namespace Tables.Editor.VisualElements
         private readonly SerializedProperty _dataListProperty;
 
         public readonly HeaderRow HeaderRow;
+
         private readonly List<DataRow> _dataRows = new();
         public IReadOnlyList<DataRow> DataRows => _dataRows;
-        public readonly EmptyRow EmptyRow;
+
+        public readonly FooterRow FooterRow;
 
         public event Action<DataRow> OnRowAdded;
 
@@ -45,17 +47,17 @@ namespace Tables.Editor.VisualElements
                 }
             }
 
-            EmptyRow = new EmptyRow(dataMatrix?.Length ?? 0, _database.Columns);
-            Add(EmptyRow);
+            FooterRow = new FooterRow();
+            Add(FooterRow);
         }
 
-        public DataRow AddDataRow(object[] rowValues)
+        public DataRow AddDataRow()
         {
             var index = _dataRows.Count;
             _dataListProperty.InsertArrayElementAtIndex(index);
             var rowProperty = _dataListProperty.GetArrayElementAtIndex(index);
 
-            var dataRow = new DataRow(index, _database.Columns, rowProperty.boxedValue, rowValues, rowProperty);
+            var dataRow = new DataRow(index, _database.Columns, rowProperty.boxedValue, null, rowProperty);
             Insert(Children().Count() - 1, dataRow);
 
             _dataListProperty.serializedObject.ApplyModifiedProperties();

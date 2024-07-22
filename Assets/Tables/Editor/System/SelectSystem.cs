@@ -173,19 +173,10 @@ namespace Tables.Editor.System
                 var right = Mathf.Max(StartSelectedCell.Col, EndSelectedCell.Col);
 
                 var selectedCells = new Cell[bottom - top + 1][];
-                var isSelectedEmptyRowCell = bottom == _table.DataRows.Count;
-                if (isSelectedEmptyRowCell) bottom--;
-
                 for (var i = top; i <= bottom; i++)
                 {
                     selectedCells[i - top] = new Cell[right - left + 1];
                     for (var j = left; j <= right; j++) selectedCells[i - top][j - left] = _table.DataRows[i][j];
-                }
-
-                if (isSelectedEmptyRowCell)
-                {
-                    selectedCells[bottom - top + 1] = new Cell[right - left + 1];
-                    for (var j = left; j <= right; j++) selectedCells[bottom - top + 1][j - left] = _table.EmptyRow.Cells[j];
                 }
 
                 return selectedCells;

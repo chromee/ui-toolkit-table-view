@@ -52,16 +52,11 @@ namespace Tables.Editor
                 }
             }
 
-            Table.EmptyRow.AddRowButton.clicked += () =>
+            Table.FooterRow.AddRowButton.clicked += () =>
             {
-                var dataRow = Table.AddDataRow(Table.EmptyRow.Cells.Select(cell => cell.GetValue()).ToArray());
+                var dataRow = Table.AddDataRow();
                 foreach (var cell in dataRow.Cells) RegisterCellCallback(cell);
             };
-
-            foreach (var cell in Table.EmptyRow.Cells)
-            {
-                RegisterCellCallback(cell);
-            }
 
             rootVisualElement.RegisterCallback<MouseUpEvent>(_ =>
             {

@@ -48,7 +48,6 @@ namespace Tables.Editor.System
             var width = Mathf.Max(50, _initialColumnWidth + delta);
             _database.Columns[_resizingColumnIndex].Width = width;
             _table.HeaderRow.Cells[_resizingColumnIndex].style.width = width;
-            _table.EmptyRow.Cells[_resizingColumnIndex].Width = width;
 
             foreach (var row in _table.DataRows)
             {

@@ -88,5 +88,20 @@ namespace Tables.Runtime
                     TypeCode.Boolean => "bool",
                     _ => type.AssemblyQualifiedName,
                 };
+
+        public object GetDefaultValue()
+        {
+            return
+                Type.IsEnum ?
+                    Enum.ToObject(Type, 0) :
+                    Type.GetTypeCode(Type) switch
+                    {
+                        TypeCode.String => string.Empty,
+                        TypeCode.Int32 => 0,
+                        TypeCode.Single => 0f,
+                        TypeCode.Boolean => false,
+                        _ => Activator.CreateInstance(Type),
+                    };
+        }
     }
 }
