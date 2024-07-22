@@ -11,9 +11,9 @@ namespace Tables.Editor.VisualElements.Cells
         private VisualElement _body;
         private bool _isEditing;
 
-        public IntCell(int row, int col, int value, ColumnMetadata metadata, SerializedProperty dataProperty) : base(row, col, value, metadata, dataProperty)
+        public IntCell(int row, int col, int value, ColumnMetadata metadata, SerializedProperty rowProperty) : base(row, col, value, metadata, rowProperty)
         {
-            if (dataProperty != null) dataProperty.FindPropertyRelative(metadata.Name).intValue = value;
+            if (rowProperty != null) rowProperty.FindPropertyRelative(metadata.Name).intValue = value;
         }
 
         public override void StartEditing() => StartEditing(Value);
@@ -40,12 +40,11 @@ namespace Tables.Editor.VisualElements.Cells
 
             var integerField = new IntegerField { value = value, };
 
-            if (DataProperty != null)
+            if (CellProperty != null)
             {
-                var property = DataProperty.FindPropertyRelative(Metadata.Name);
-                property.intValue = value;
-                DataProperty.serializedObject.ApplyModifiedProperties();
-                integerField.BindProperty(property);
+                CellProperty.intValue = value;
+                CellProperty.serializedObject.ApplyModifiedProperties();
+                integerField.BindProperty(CellProperty);
             }
 
             integerField.RegisterCallback<FocusInEvent>(_ =>

@@ -10,7 +10,8 @@ namespace Tables.Editor.VisualElements
     public abstract class Cell : VisualElement
     {
         public readonly ColumnMetadata Metadata;
-        protected readonly SerializedProperty DataProperty;
+        protected readonly SerializedProperty RowProperty;
+        protected readonly SerializedProperty CellProperty;
 
         public int Row;
         public int Col;
@@ -27,25 +28,26 @@ namespace Tables.Editor.VisualElements
             set => style.width = value;
         }
 
-        public static Cell Create<T>(int row, int col, T value, ColumnMetadata metadata, SerializedProperty dataProperty)
+        public static Cell Create<T>(int row, int col, T value, ColumnMetadata metadata, SerializedProperty rowProperty)
         {
             return value switch
             {
-                string sv => new StringCell(row, col, sv, metadata, dataProperty),
-                int iv => new IntCell(row, col, iv, metadata, dataProperty),
-                float fv => new FloatCell(row, col, fv, metadata, dataProperty),
-                bool bv => new BoolCell(row, col, bv, metadata, dataProperty),
-                Enum ev => new EnumCell(row, col, ev, metadata, dataProperty),
-                _ => new StringCell(row, col, value.ToString(), metadata, dataProperty),
+                string sv => new StringCell(row, col, sv, metadata, rowProperty),
+                int iv => new IntCell(row, col, iv, metadata, rowProperty),
+                float fv => new FloatCell(row, col, fv, metadata, rowProperty),
+                bool bv => new BoolCell(row, col, bv, metadata, rowProperty),
+                Enum ev => new EnumCell(row, col, ev, metadata, rowProperty),
+                _ => new StringCell(row, col, value.ToString(), metadata, rowProperty),
             };
         }
 
-        protected Cell(int row, int col, ColumnMetadata metadata, SerializedProperty dataProperty)
+        protected Cell(int row, int col, ColumnMetadata metadata, SerializedProperty rowProperty)
         {
             Row = row;
             Col = col;
             Metadata = metadata;
-            DataProperty = dataProperty;
+            RowProperty = rowProperty;
+            CellProperty = rowProperty?.FindPropertyRelative(metadata.Name);
             Width = metadata.Width;
 
             AddToClassList("cell");
@@ -99,7 +101,7 @@ namespace Tables.Editor.VisualElements
 
         public override object GetValue() => Value;
 
-        protected Cell(int row, int col, T value, ColumnMetadata metadata, SerializedProperty dataProperty) : base(row, col, metadata, dataProperty)
+        protected Cell(int row, int col, T value, ColumnMetadata metadata, SerializedProperty rowProperty) : base(row, col, metadata, rowProperty)
         {
             Value = value;
         }

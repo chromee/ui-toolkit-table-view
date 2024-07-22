@@ -7,7 +7,7 @@ namespace Tables.Editor.VisualElements.Cells
 {
     public class BoolCell : Cell<bool>
     {
-        public BoolCell(int row, int col, bool value, ColumnMetadata metadata, SerializedProperty dataProperty) : base(row, col, value, metadata, dataProperty)
+        public BoolCell(int row, int col, bool value, ColumnMetadata metadata, SerializedProperty rowProperty) : base(row, col, value, metadata, rowProperty)
         {
             var toggle = new Toggle { text = string.Empty, value = Value };
 
@@ -18,11 +18,10 @@ namespace Tables.Editor.VisualElements.Cells
                 ValueChangeFromEdit(prev, Value);
             });
 
-            if (DataProperty != null)
+            if (CellProperty != null)
             {
-                var property = DataProperty.FindPropertyRelative(metadata.Name);
-                property.boolValue = value;
-                toggle.BindProperty(DataProperty.FindPropertyRelative(metadata.Name));
+                CellProperty.boolValue = value;
+                toggle.BindProperty(CellProperty);
             }
 
             AddToClassList("input-cell");

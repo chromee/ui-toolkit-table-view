@@ -13,7 +13,7 @@ namespace Tables.Editor.VisualElements
         public Cell[] Cells { get; }
         public new Cell this[int index] => Cells[index];
 
-        public DataRow(int index, ColumnMetadata[] metadata, object data, object[] values, SerializedProperty dataProperty)
+        public DataRow(int index, ColumnMetadata[] metadata, object data, object[] values, SerializedProperty rowProperty)
         {
             AddToClassList("row");
 
@@ -26,7 +26,7 @@ namespace Tables.Editor.VisualElements
             for (var i = 0; i < metadata.Length; i++)
             {
                 var md = metadata[i];
-                var cell = Cell.Create(Index, i, values?[i], md, dataProperty);
+                var cell = Cell.Create(Index, i, values?[i], md, rowProperty);
                 Cells[i] = cell;
                 Add(cell);
             }

@@ -53,15 +53,15 @@ namespace Tables.Editor.VisualElements
         {
             var index = _dataRows.Count;
             _dataListProperty.InsertArrayElementAtIndex(index);
-            var dataProperty = _dataListProperty.GetArrayElementAtIndex(index);
+            var rowProperty = _dataListProperty.GetArrayElementAtIndex(index);
 
-            var dataRow = new DataRow(index, _database.Columns, dataProperty.boxedValue, rowValues, dataProperty);
+            var dataRow = new DataRow(index, _database.Columns, rowProperty.boxedValue, rowValues, rowProperty);
             Insert(Children().Count() - 1, dataRow);
 
             _dataListProperty.serializedObject.ApplyModifiedProperties();
 
-            dataProperty = _dataListProperty.GetArrayElementAtIndex(index);
-            dataRow.SetData(dataProperty.boxedValue);
+            rowProperty = _dataListProperty.GetArrayElementAtIndex(index);
+            dataRow.SetData(rowProperty.boxedValue);
 
             _dataRows.Add(dataRow);
             OnRowAdded?.Invoke(dataRow);

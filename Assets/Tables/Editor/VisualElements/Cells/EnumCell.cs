@@ -8,7 +8,7 @@ namespace Tables.Editor.VisualElements.Cells
 {
     public class EnumCell : Cell<Enum>
     {
-        public EnumCell(int row, int col, Enum value, ColumnMetadata metadata, SerializedProperty dataProperty) : base(row, col, value, metadata, dataProperty)
+        public EnumCell(int row, int col, Enum value, ColumnMetadata metadata, SerializedProperty rowProperty) : base(row, col, value, metadata, rowProperty)
         {
             var enumField = new EnumField();
             enumField.Init(Value);
@@ -20,11 +20,10 @@ namespace Tables.Editor.VisualElements.Cells
                 ValueChangeFromEdit(prev, Value);
             });
 
-            if (DataProperty != null)
+            if (CellProperty != null)
             {
-                var property = DataProperty.FindPropertyRelative(metadata.Name);
-                property.enumValueIndex = Convert.ToInt32(value);
-                enumField.BindProperty(DataProperty.FindPropertyRelative(metadata.Name));
+                CellProperty.enumValueIndex = Convert.ToInt32(value);
+                enumField.BindProperty(CellProperty);
             }
 
             AddToClassList("input-cell");

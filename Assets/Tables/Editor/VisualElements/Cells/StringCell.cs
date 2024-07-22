@@ -13,9 +13,9 @@ namespace Tables.Editor.VisualElements.Cells
         private VisualElement _body;
         private bool _isEditing;
 
-        public StringCell(int row, int col, string value, ColumnMetadata metadata, SerializedProperty dataProperty) : base(row, col, value, metadata, dataProperty)
+        public StringCell(int row, int col, string value, ColumnMetadata metadata, SerializedProperty rowProperty) : base(row, col, value, metadata, rowProperty)
         {
-            if (dataProperty != null) dataProperty.FindPropertyRelative(metadata.Name).stringValue = value;
+            if (rowProperty != null) rowProperty.FindPropertyRelative(metadata.Name).stringValue = value;
         }
 
         public override void StartEditing()
@@ -44,12 +44,11 @@ namespace Tables.Editor.VisualElements.Cells
 
             var textField = new TextField { value = value, };
 
-            if (DataProperty != null)
+            if (CellProperty != null)
             {
-                var property = DataProperty.FindPropertyRelative(Metadata.Name);
-                property.stringValue = value;   
-                DataProperty.serializedObject.ApplyModifiedProperties();
-                textField.BindProperty(property);
+                CellProperty.stringValue = value;   
+                CellProperty.serializedObject.ApplyModifiedProperties();
+                textField.BindProperty(CellProperty);
             }
 
             textField.RegisterCallback<FocusInEvent>(_ =>

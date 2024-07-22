@@ -12,9 +12,9 @@ namespace Tables.Editor.VisualElements.Cells
         private VisualElement _body;
         private bool _isEditing;
 
-        public FloatCell(int row, int col, float value, ColumnMetadata metadata, SerializedProperty dataProperty) : base(row, col, value, metadata, dataProperty)
+        public FloatCell(int row, int col, float value, ColumnMetadata metadata, SerializedProperty rowProperty) : base(row, col, value, metadata, rowProperty)
         {
-            if (dataProperty != null) dataProperty.FindPropertyRelative(metadata.Name).floatValue = value;
+            if (rowProperty != null) rowProperty.FindPropertyRelative(metadata.Name).floatValue = value;
         }
 
         public override void StartEditing() => StartEditing(Value);
@@ -41,12 +41,11 @@ namespace Tables.Editor.VisualElements.Cells
 
             var floatField = new FloatField { value = value, };
 
-            if (DataProperty != null)
+            if (CellProperty != null)
             {
-                var property = DataProperty.FindPropertyRelative(Metadata.Name);
-                property.floatValue = value;
-                DataProperty.serializedObject.ApplyModifiedProperties();
-                floatField.BindProperty(property);
+                CellProperty.floatValue = value;
+                CellProperty.serializedObject.ApplyModifiedProperties();
+                floatField.BindProperty(CellProperty);
             }
 
             floatField.RegisterCallback<FocusInEvent>(_ =>
