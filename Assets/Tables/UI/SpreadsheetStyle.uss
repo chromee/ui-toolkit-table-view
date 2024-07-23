@@ -120,3 +120,13 @@
 .error-cell {
     background-color: rgb(224, 102, 102);
 }
+
+.selected-row > .index-cell {
+    cursor: pan;
+    background-color: rgb(26, 115, 232);
+    -unity-font-style: bold;
+}
+
+.selected-row > .index-cell > Label {
+    cursor: pan;
+}

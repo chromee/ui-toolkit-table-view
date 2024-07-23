@@ -48,6 +48,46 @@
                     <ui:Label tabindex="-1" text="cell" parse-escape-sequences="true" display-tooltip-when-elided="true" />
                 </ui:VisualElement>
             </ui:VisualElement>
+            <ui:VisualElement name="row" class="row">
+                <ui:VisualElement name="index-cell" class="cell index-cell">
+                    <ui:Label tabindex="-1" text="10" parse-escape-sequences="true" display-tooltip-when-elided="true" />
+                </ui:VisualElement>
+                <ui:VisualElement name="cell" class="cell" style="width: 100px;">
+                    <ui:Label tabindex="-1" text="cell" parse-escape-sequences="true" display-tooltip-when-elided="true" />
+                </ui:VisualElement>
+                <ui:VisualElement name="cell" class="cell" style="width: 100px;">
+                    <ui:Label tabindex="-1" text="cell" parse-escape-sequences="true" display-tooltip-when-elided="true" />
+                </ui:VisualElement>
+                <ui:VisualElement name="cell" class="cell" style="width: 100px;">
+                    <ui:Label tabindex="-1" text="cell" parse-escape-sequences="true" display-tooltip-when-elided="true" />
+                </ui:VisualElement>
+                <ui:VisualElement name="cell" tooltip="HogeHoge" class="cell warning-cell" style="width: 100px;">
+                    <ui:Label tabindex="-1" text="cell" parse-escape-sequences="true" display-tooltip-when-elided="true" />
+                </ui:VisualElement>
+                <ui:VisualElement name="cell" class="cell error-cell" style="width: 100px;">
+                    <ui:Label tabindex="-1" text="cell" parse-escape-sequences="true" display-tooltip-when-elided="true" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="row" class="row selected-row">
+                <ui:VisualElement name="index-cell" class="cell index-cell">
+                    <ui:Label tabindex="-1" text="10" parse-escape-sequences="true" display-tooltip-when-elided="true" />
+                </ui:VisualElement>
+                <ui:VisualElement name="cell" class="cell" style="width: 100px;">
+                    <ui:Label tabindex="-1" text="cell" parse-escape-sequences="true" display-tooltip-when-elided="true" />
+                </ui:VisualElement>
+                <ui:VisualElement name="cell" class="cell" style="width: 100px;">
+                    <ui:Label tabindex="-1" text="cell" parse-escape-sequences="true" display-tooltip-when-elided="true" />
+                </ui:VisualElement>
+                <ui:VisualElement name="cell" class="cell" style="width: 100px;">
+                    <ui:Label tabindex="-1" text="cell" parse-escape-sequences="true" display-tooltip-when-elided="true" />
+                </ui:VisualElement>
+                <ui:VisualElement name="cell" tooltip="HogeHoge" class="cell warning-cell" style="width: 100px;">
+                    <ui:Label tabindex="-1" text="cell" parse-escape-sequences="true" display-tooltip-when-elided="true" />
+                </ui:VisualElement>
+                <ui:VisualElement name="cell" class="cell error-cell" style="width: 100px;">
+                    <ui:Label tabindex="-1" text="cell" parse-escape-sequences="true" display-tooltip-when-elided="true" />
+                </ui:VisualElement>
+            </ui:VisualElement>
             <ui:VisualElement name="input-row" class="row">
                 <ui:VisualElement name="index-cell" class="cell index-cell">
                     <ui:Label tabindex="-1" text="2000" parse-escape-sequences="true" display-tooltip-when-elided="true" />
@@ -65,17 +105,14 @@
                     <ui:FloatField value="42.2" />
                 </ui:VisualElement>
                 <ui:VisualElement name="input-cell" class="cell input-cell" style="width: 100px;">
-                    <ui:EnumField type="Sample.Scripts.Gender, Assembly-CSharp" />
+                    <ui:EnumField type="Tables.Sample.Scripts.Gender, Assembly-CSharp" />
                 </ui:VisualElement>
             </ui:VisualElement>
-            <ui:VisualElement name="empty-row" class="row">
+            <ui:VisualElement name="footer" class="row">
                 <ui:Button text="+" parse-escape-sequences="true" display-tooltip-when-elided="true" name="add-row-button" class="add-row-button" />
-                <ui:VisualElement name="empty-cell" class="cell" style="width: 100px;" />
-                <ui:VisualElement name="empty-cell" class="cell" style="width: 100px;" />
-                <ui:VisualElement name="empty-cell" class="cell" style="width: 100px;" />
-                <ui:VisualElement name="empty-cell" class="cell" style="width: 100px;" />
-                <ui:VisualElement name="empty-cell" class="cell" style="width: 100px;" />
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:Instance>
+    <ui:VisualElement name="select-marker" class="select-marker" style="flex-grow: 1; left: 49px; top: 98px; width: 102px; height: 29px;" />
+    <ui:VisualElement name="select-range-marker" class="select-range-marker" style="flex-grow: 1; left: 49px; top: 98px; width: 502px; height: 29px;" />
 </ui:UXML>

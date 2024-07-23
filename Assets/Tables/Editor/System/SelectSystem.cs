@@ -62,6 +62,7 @@ namespace Tables.Editor.System
             CancelSelecting();
 
             StartSelectedRow = row;
+            row.AddToClassList("selected-row");
             _selectMarker.Fit(row.Cells.First());
             _selectMarker.IsVisible = true;
             _selectRangeMarker.Fit(row.Cells.First(), row.Cells.Last());
@@ -69,21 +70,34 @@ namespace Tables.Editor.System
             IsSelecting = true;
         }
 
-        public void RowSelecting(DataRow cell)
+        public void RowSelecting(DataRow row)
         {
-            if (!IsSelecting || StartSelectedRow == null || cell == null) return;
+            if (!IsSelecting || StartSelectedRow == null || row == null) return;
 
-            EndSelectedRow = cell;
+            EndSelectedRow = row;
             var topRow = StartSelectedRow.Index < EndSelectedRow.Index ? StartSelectedRow : EndSelectedRow;
             var bottomRow = StartSelectedRow.Index < EndSelectedRow.Index ? EndSelectedRow : StartSelectedRow;
             _selectRangeMarker.Fit(topRow.Cells.First(), bottomRow.Cells.Last());
             _selectRangeMarker.IsVisible = true;
+            UpdateSelectedRowStyle();
         }
 
         public void EndRowSelecting()
         {
             if (!IsSelecting) return;
             IsSelecting = false;
+        }
+
+        private void UpdateSelectedRowStyle()
+        {
+            var selectedRows = GetSelectedRows();
+            if (selectedRows == null) return;
+
+            foreach (var row in _table.DataRows)
+            {
+                if (selectedRows.Contains(row)) row.AddToClassList("selected-row");
+                else row.RemoveFromClassList("selected-row");
+            }
         }
 
         #endregion
@@ -136,6 +150,11 @@ namespace Tables.Editor.System
 
         public void CancelSelecting()
         {
+            if (StartSelectedRow != null)
+            {
+                foreach (var row in GetSelectedRows()) row.RemoveFromClassList("selected-row");
+            }
+
             StartSelectedCell = null;
             EndSelectedCell = null;
             StartSelectedRow = null;
