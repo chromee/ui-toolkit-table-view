@@ -26,7 +26,7 @@ namespace Tables.Editor.System
         {
             if (_selectSystem.StartSelectedRow != null) return;
 
-            var selectedCells = _selectSystem.GetSelectedCells();
+            var selectedCells = _selectSystem.SelectedCells;
             if (selectedCells == null || !selectedCells.Any()) return;
 
             var commandSet = new CommandSet();
@@ -41,9 +41,9 @@ namespace Tables.Editor.System
             if (commandSet.Commands.Any()) _undoRedoSystem.AddUndoCommand(commandSet);
         }
 
-        public void DeleteSelectedRow()
+        private void DeleteSelectedRow()
         {
-            var selectedRows = _selectSystem.GetSelectedRows();
+            var selectedRows = _selectSystem.SelectedRows;
             if (selectedRows == null || !selectedRows.Any()) return;
 
             foreach (var row in selectedRows) _table.RemoveDataRow(row);

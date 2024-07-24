@@ -30,7 +30,7 @@ namespace Tables.Editor.System
         {
             if (CopiedCell == null) return;
 
-            var selectedCells = _selectSystem.GetSelectedCells();
+            var selectedCells = _selectSystem.SelectedCells;
             if (selectedCells == null || !selectedCells.Any()) return;
 
             var commandSet = new CommandSet();

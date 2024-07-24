@@ -74,7 +74,10 @@ namespace Tables.Editor
                 if (evt.clickCount == 1) SelectSystem.StartRowSelecting(dataRow);
             });
 
-            dataRow.IndexCell.RegisterCallback<MouseEnterEvent>(_ => SelectSystem.RowSelecting(dataRow));
+            dataRow.IndexCell.RegisterCallback<MouseEnterEvent>(_ =>
+            {
+                SelectSystem.RowSelecting(dataRow);
+            });
         }
 
         private void RegisterCellCallback(Cell cell)

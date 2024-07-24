@@ -12,8 +12,10 @@ namespace Tables.Editor.System
         public bool IsSelecting { get; private set; }
         public Cell StartSelectedCell { get; private set; }
         public Cell EndSelectedCell { get; private set; }
+        public Cell[][] SelectedCells { get; private set; }
         public DataRow StartSelectedRow { get; private set; }
         public DataRow EndSelectedRow { get; private set; }
+        public DataRow[] SelectedRows { get; private set; }
 
         private readonly Marker _selectMarker;
         private readonly Marker _selectRangeMarker;
@@ -35,7 +37,9 @@ namespace Tables.Editor.System
             _selectMarker.Fit(cell);
             _selectMarker.IsVisible = true;
             _selectRangeMarker.IsVisible = false;
+
             IsSelecting = true;
+            UpdateSelectedCell();
         }
 
         public void Selecting(Cell cell)
@@ -43,14 +47,22 @@ namespace Tables.Editor.System
             if (!IsSelecting || StartSelectedCell == null || cell == null) return;
 
             EndSelectedCell = cell;
+
             _selectRangeMarker.Fit(StartSelectedCell, EndSelectedCell);
             _selectRangeMarker.IsVisible = true;
+
+            UpdateSelectedCell();
         }
 
         public void EndSelecting()
         {
             if (!IsSelecting) return;
             IsSelecting = false;
+        }
+
+        private void UpdateSelectedCell()
+        {
+            SelectedCells = GetSelectedCells();
         }
 
         #endregion
@@ -62,12 +74,14 @@ namespace Tables.Editor.System
             CancelSelecting();
 
             StartSelectedRow = row;
-            row.AddToClassList("selected-row");
+
             _selectMarker.Fit(row.Cells.First());
             _selectMarker.IsVisible = true;
             _selectRangeMarker.Fit(row.Cells.First(), row.Cells.Last());
             _selectRangeMarker.IsVisible = true;
+
             IsSelecting = true;
+            UpdateSelectedRow();
         }
 
         public void RowSelecting(DataRow row)
@@ -75,11 +89,13 @@ namespace Tables.Editor.System
             if (!IsSelecting || StartSelectedRow == null || row == null) return;
 
             EndSelectedRow = row;
+
             var topRow = StartSelectedRow.Index < EndSelectedRow.Index ? StartSelectedRow : EndSelectedRow;
             var bottomRow = StartSelectedRow.Index < EndSelectedRow.Index ? EndSelectedRow : StartSelectedRow;
             _selectRangeMarker.Fit(topRow.Cells.First(), bottomRow.Cells.Last());
             _selectRangeMarker.IsVisible = true;
-            UpdateSelectedRowStyle();
+
+            UpdateSelectedRow();
         }
 
         public void EndRowSelecting()
@@ -88,14 +104,13 @@ namespace Tables.Editor.System
             IsSelecting = false;
         }
 
-        private void UpdateSelectedRowStyle()
+        private void UpdateSelectedRow()
         {
-            var selectedRows = GetSelectedRows();
-            if (selectedRows == null) return;
+            SelectedRows = GetSelectedRows();
 
             foreach (var row in _table.DataRows)
             {
-                if (selectedRows.Contains(row)) row.AddToClassList("selected-row");
+                if (SelectedRows != null && SelectedRows.Contains(row)) row.AddToClassList("selected-row");
                 else row.RemoveFromClassList("selected-row");
             }
         }
@@ -150,21 +165,18 @@ namespace Tables.Editor.System
 
         public void CancelSelecting()
         {
-            if (StartSelectedRow != null)
-            {
-                foreach (var row in GetSelectedRows()) row.RemoveFromClassList("selected-row");
-            }
-
             StartSelectedCell = null;
             EndSelectedCell = null;
             StartSelectedRow = null;
             EndSelectedRow = null;
             _selectMarker.IsVisible = false;
             _selectRangeMarker.IsVisible = false;
+            UpdateSelectedCell();
+            UpdateSelectedRow();
         }
 
         // TODO: Spanを使う
-        public Cell[][] GetSelectedCells()
+        private Cell[][] GetSelectedCells()
         {
             if (StartSelectedRow != null)
             {
@@ -204,7 +216,7 @@ namespace Tables.Editor.System
             return null;
         }
 
-        public DataRow[] GetSelectedRows()
+        private DataRow[] GetSelectedRows()
         {
             if (StartSelectedRow == null) return null;
             if (EndSelectedRow == null) return new[] { StartSelectedRow };
