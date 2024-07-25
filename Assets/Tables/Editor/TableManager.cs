@@ -32,7 +32,7 @@ namespace Tables.Editor
 
             UndoRedoSystem = new UndoRedoSystem();
             SelectSystem = new SelectSystem(_rootVisualElement, Table);
-            CopyPasteSystem = new CopyPasteSystem(_rootVisualElement, SelectSystem, UndoRedoSystem);
+            CopyPasteSystem = new CopyPasteSystem(_rootVisualElement, Table, SelectSystem, UndoRedoSystem);
             ResizeColSystem = new ResizeColSystem(database, _rootVisualElement, body, Table, SelectSystem, CopyPasteSystem);
             DeleteSystem = new DeleteSystem(Table, SelectSystem, UndoRedoSystem);
             ValidateSystem = new ValidateSystem(database, Table);

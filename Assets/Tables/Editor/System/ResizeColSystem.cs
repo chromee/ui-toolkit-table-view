@@ -53,13 +53,9 @@ namespace Tables.Editor.System
             {
                 var cell = row[_resizingColumnIndex];
                 cell.Width = width;
-                if (cell == _selectSystem.StartSelectedCell)
-                {
-                    if (_selectSystem.EndSelectedCell != null && _selectSystem.IsSelected(cell)) _selectSystem.FitRangeMarker();
-                    else _selectSystem.FitSelectMarker();
-                }
-
-                if (cell == _copyPasteSystem.CopiedCell) _copyPasteSystem.FitCopyMarker();
+                if (_selectSystem.IsStartSelectedCell(cell)) _selectSystem.FitSelectMarker();
+                if (_selectSystem.IsExistStartSelectedCell && _selectSystem.IsSelected(cell)) _selectSystem.FitRangeMarker();
+                if (_copyPasteSystem.IsCopyCell(cell)) _copyPasteSystem.FitCopyMarker();
             }
         }
 

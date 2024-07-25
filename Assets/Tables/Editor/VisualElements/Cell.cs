@@ -15,7 +15,7 @@ namespace Tables.Editor.VisualElements
 
         public int Row;
         public int Col;
-        public Vector2 Position => new(Col, Row);
+        public Vector2Int Position => new(Col, Row);
 
         public abstract object GetValue();
 

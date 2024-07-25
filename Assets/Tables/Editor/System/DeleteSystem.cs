@@ -24,7 +24,8 @@ namespace Tables.Editor.System
 
         private void ClearSelectedCell()
         {
-            if (_selectSystem.StartSelectedRow != null) return;
+            // NOTE: 行選択中はセルクリアではなく行削除をするためここはスキップ
+            if (_selectSystem.IsExistStartSelectedRow) return;
 
             var selectedCells = _selectSystem.SelectedCells;
             if (selectedCells == null || !selectedCells.Any()) return;
