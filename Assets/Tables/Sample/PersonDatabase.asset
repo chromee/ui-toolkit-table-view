@@ -40,32 +40,32 @@ MonoBehaviour:
     Height: 159
     Gender: 1
     IsMarried: 0
+  - Id: 3
+    Name: Hanaco
+    Height: 160
+    Gender: 1
+    IsMarried: 1
   - Id: 4
     Name: Hanacoaiueo
     Height: 120
     Gender: 1
     IsMarried: 0
   - Id: 5
-    Name: Hanaco
-    Height: 160
-    Gender: 1
-    IsMarried: 1
-  - Id: 7
     Name: aaa
     Height: 180
     Gender: 0
     IsMarried: 1
-  - Id: 8
+  - Id: 6
     Name: dfas
     Height: -2
     Gender: 0
     IsMarried: 0
-  - Id: 10
+  - Id: 7
     Name: asdfa
     Height: 111
     Gender: 0
     IsMarried: 0
-  - Id: 11
+  - Id: 8
     Name: asdfa
     Height: 112
     Gender: 1

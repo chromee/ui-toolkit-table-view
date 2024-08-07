@@ -8,7 +8,7 @@ namespace Tables.Editor.VisualElements
 {
     public class DataRow : VisualElement
     {
-        public readonly int Index;
+        public int Index { get; private set; }
         public object Data { get; private set; }
         public IndexCell IndexCell { get; }
         public Cell[] Cells { get; }
@@ -32,6 +32,12 @@ namespace Tables.Editor.VisualElements
                 Cells[i] = cell;
                 Add(cell);
             }
+        }
+
+        public void UpdateIndex(int index)
+        {
+            Index = index;
+            IndexCell.UpdateIndex(index);
         }
 
         public void SetData(object data) => Data = data;

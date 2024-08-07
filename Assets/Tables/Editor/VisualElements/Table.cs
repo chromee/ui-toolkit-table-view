@@ -54,16 +54,14 @@ namespace Tables.Editor.VisualElements
         public DataRow AddDataRow()
         {
             var index = _dataRows.Count;
+
             _dataListProperty.InsertArrayElementAtIndex(index);
             var rowProperty = _dataListProperty.GetArrayElementAtIndex(index);
-
-            var dataRow = new DataRow(index, _database.Columns, rowProperty.boxedValue, null, rowProperty);
-            Insert(Children().Count() - 1, dataRow);
-
             _dataListProperty.serializedObject.ApplyModifiedProperties();
 
-            rowProperty = _dataListProperty.GetArrayElementAtIndex(index);
-            dataRow.SetData(rowProperty.boxedValue);
+            var data = _database.GetData();
+            var dataRow = new DataRow(index, _database.Columns, data[index], null, rowProperty);
+            Insert(Children().Count() - 1, dataRow);
 
             _dataRows.Add(dataRow);
             OnRowAdded?.Invoke(dataRow);
@@ -79,6 +77,52 @@ namespace Tables.Editor.VisualElements
 
             _dataRows.Remove(dataRow);
             dataRow.RemoveFromHierarchy();
+        }
+
+        public void MoveDataRow(DataRow[] moveRows, int toIndex)
+        {
+            if (moveRows == null || !moveRows.Any()) return;
+
+            var stIndex = moveRows.Min(row => row.Index);
+            var edIndex = moveRows.Max(row => row.Index);
+            var isMoveToUp = toIndex < stIndex;
+            var changeSize = moveRows.Length;
+            if (stIndex <= toIndex && toIndex <= edIndex) return;
+
+            for (var i = 0; i < changeSize; i++) _dataListProperty.MoveArrayElement(isMoveToUp ? edIndex : stIndex, toIndex);
+            _dataListProperty.serializedObject.ApplyModifiedProperties();
+
+            // NOTE: MoveArrayElement & ApplyModifiedProperties の結果、元データの参照はそのままに中身の移動した値が書き換わる。罠すぎワロタ（笑えない）
+
+            var (updateSt, updateEd) = isMoveToUp ? (toIndex, edIndex) : (stIndex, toIndex);
+            var (upSt, upEd, downSt, downEd) = isMoveToUp ?
+                (stIndex, edIndex, toIndex, stIndex - 1) :
+                (edIndex + 1, toIndex, stIndex, edIndex);
+            var upCount = isMoveToUp ? upSt - downSt : changeSize;
+            var downCount = isMoveToUp ? changeSize : upSt - downSt;
+
+            var moves = new List<(int from, int to)>();
+            for (var i = updateSt; i <= updateEd; i++)
+            {
+                if (upSt <= i && i <= upEd) moves.Add((i, i - upCount));
+                else if (downSt <= i && i <= downEd) moves.Add((i, i + downCount));
+            }
+
+            foreach (var (from, to) in moves)
+            {
+                var dataRow = _dataRows[from];
+                dataRow.UpdateIndex(to);
+                Remove(dataRow);
+                Insert(to + 1, dataRow);
+            }
+
+            for (var i = 0; i < changeSize; i++)
+            {
+                var index = isMoveToUp ? edIndex : stIndex;
+                var dataRow = _dataRows[index];
+                _dataRows.RemoveAt(index);
+                _dataRows.Insert(toIndex, dataRow);
+            }
         }
     }
 }

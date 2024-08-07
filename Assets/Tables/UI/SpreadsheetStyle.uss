@@ -130,3 +130,21 @@
 .selected-row > .index-cell > Label {
     cursor: pan;
 }
+
+.reorder-shadow {
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.38);
+    border-left-color: rgba(26, 115, 232, 0.35);
+    border-right-color: rgba(26, 115, 232, 0.35);
+    border-top-color: rgba(26, 115, 232, 0.35);
+    border-bottom-color: rgba(26, 115, 232, 0.35);
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+}
+
+.recorder-line {
+    background-color: rgb(119, 119, 119);
+    position: absolute;
+}

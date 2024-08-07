@@ -115,4 +115,6 @@
     </ui:Instance>
     <ui:VisualElement name="select-marker" class="select-marker" style="flex-grow: 1; left: 49px; top: 98px; width: 102px; height: 29px;" />
     <ui:VisualElement name="select-range-marker" class="select-range-marker" style="flex-grow: 1; left: 49px; top: 98px; width: 502px; height: 29px;" />
+    <ui:VisualElement name="reorder-shadow" class="reorder-shadow" style="flex-grow: 1; width: 89%; height: 23px; top: 70px; border-left-color: rgba(26, 115, 232, 0.35); border-right-color: rgba(26, 115, 232, 0.35); border-top-color: rgba(26, 115, 232, 0.35); border-bottom-color: rgba(26, 115, 232, 0.35); background-color: rgba(0, 0, 0, 0.35);" />
+    <ui:VisualElement name="recorder-line" class="recorder-line" style="flex-grow: 1; width: 550px; height: 2px; top: 73px;" />
 </ui:UXML>

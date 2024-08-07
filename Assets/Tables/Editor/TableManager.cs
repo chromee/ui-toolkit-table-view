@@ -11,13 +11,14 @@ namespace Tables.Editor
     {
         public readonly Database Database;
         public readonly Table Table;
-        public readonly UndoRedoSystem UndoRedoSystem;
         public readonly CopyPasteSystem CopyPasteSystem;
-        public readonly ResizeColSystem ResizeColSystem;
-        public readonly SelectSystem SelectSystem;
         public readonly DeleteSystem DeleteSystem;
-        public readonly ValidateSystem ValidateSystem;
+        public readonly ResizeColSystem ResizeColSystem;
+        public readonly RowReorderSystem RowReorderSystem;
+        public readonly SelectSystem SelectSystem;
         public readonly ShortcutKeySystem ShortcutKeySystem;
+        public readonly UndoRedoSystem UndoRedoSystem;
+        public readonly ValidateSystem ValidateSystem;
 
         private readonly VisualElement _rootVisualElement;
 
@@ -32,6 +33,7 @@ namespace Tables.Editor
 
             UndoRedoSystem = new UndoRedoSystem();
             SelectSystem = new SelectSystem(_rootVisualElement, Table);
+            RowReorderSystem = new RowReorderSystem(_rootVisualElement, Table, SelectSystem);
             CopyPasteSystem = new CopyPasteSystem(_rootVisualElement, Table, SelectSystem, UndoRedoSystem);
             ResizeColSystem = new ResizeColSystem(database, _rootVisualElement, body, Table, SelectSystem, CopyPasteSystem);
             DeleteSystem = new DeleteSystem(Table, SelectSystem, UndoRedoSystem);
@@ -71,12 +73,20 @@ namespace Tables.Editor
         {
             dataRow.IndexCell.RegisterCallback<MouseDownEvent>(evt =>
             {
-                if (evt.clickCount == 1) SelectSystem.StartRowSelecting(dataRow);
+                if (evt.clickCount != 1) return;
+                if (SelectSystem.IsSelected(dataRow)) RowReorderSystem.StartReordering();
+                else SelectSystem.StartRowSelecting(dataRow);
             });
 
             dataRow.IndexCell.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                SelectSystem.RowSelecting(dataRow);
+                if (RowReorderSystem.IsReordering) RowReorderSystem.Reordering(dataRow);
+                else SelectSystem.RowSelecting(dataRow);
+            });
+
+            dataRow.IndexCell.RegisterCallback<MouseUpEvent>(evt =>
+            {
+                if (RowReorderSystem.IsReordering) RowReorderSystem.EndReordering(dataRow);
             });
         }
 
